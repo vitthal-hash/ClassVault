@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/models/subject.dart';
 import '../core/services/subject_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
 import '../widgets/placeholder_view.dart';
@@ -33,10 +34,13 @@ class SubjectsScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton(
-                onPressed: () => context.read<NavProvider>().setIndex(1),
-                child: const Text('Go to Semester'),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  child: const Text('Go to Semester'),
+                ),
               ),
             ),
           ],
@@ -57,6 +61,7 @@ class SubjectsScreen extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: AppSpacing.xxs),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -85,16 +90,19 @@ class SubjectsScreen extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FilledButton.icon(
-                    onPressed: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            TimetableUploadScreen(semesterId: active.id),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              TimetableUploadScreen(semesterId: active.id),
+                        ),
                       ),
+                      icon: const Icon(Icons.upload_file_rounded),
+                      label: const Text('Upload Timetable'),
                     ),
-                    icon: const Icon(Icons.upload_file_rounded),
-                    label: const Text('Upload Timetable'),
                   ),
                 ),
               ],
@@ -102,41 +110,117 @@ class SubjectsScreen extends StatelessWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xs,
+              AppSpacing.md,
+              AppSpacing.xxxl,
+            ),
             itemCount: subjects.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final subject = subjects[i];
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: Text(
-                      subject.name.isNotEmpty
-                          ? subject.name[0].toUpperCase()
-                          : '?',
-                    ),
-                  ),
-                  title: Text(subject.name),
-                  subtitle: Text(
-                    subject.code == null
-                        ? 'Theory · Lab · Tutorial · Resources · more'
-                        : 'Code: ${subject.code}',
-                  ),
-                  trailing: subject.isPinned
-                      ? const Icon(Icons.push_pin_rounded, size: 20)
-                      : const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => SubjectWorkspaceScreen(subject: subject),
-                    ),
-                  ),
-                ),
-              );
-            },
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+            itemBuilder: (context, i) => _SubjectCard(subject: subjects[i]),
           );
         },
+      ),
+    );
+  }
+}
+
+class _SubjectCard extends StatelessWidget {
+  const _SubjectCard({required this.subject});
+
+  final Subject subject;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = SubjectPalette.colorFor(subject.id);
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SubjectWorkspaceScreen(subject: subject),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                foregroundColor: color,
+                child: Text(
+                  subject.name.isNotEmpty
+                      ? subject.name[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(subject.name, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    if (subject.code != null)
+                      _CodeChip(code: subject.code!, color: color)
+                    else
+                      Text(
+                        'Theory · Lab · Tutorial · Resources · more',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                  ],
+                ),
+              ),
+              if (subject.isPinned)
+                Icon(Icons.push_pin_rounded, size: 18, color: color)
+              else
+                Icon(Icons.chevron_right_rounded,
+                    color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CodeChip extends StatelessWidget {
+  const _CodeChip({required this.code, required this.color});
+
+  final String code;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(top: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(AppRadius.sm),
+      ),
+      child: Text(
+        code,
+        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+              color: color,
+              fontWeight: FontWeight.w700,
+            ),
       ),
     );
   }

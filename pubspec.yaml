@@ -1,5 +1,5 @@
-name: academic_assistant
-description: "Academic Assistant - AI-powered study organizer"
+name: classvault
+description: "ClassVault - Your Personal Academic Workspace"
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -46,9 +46,16 @@ dev_dependencies:
   isar_generator: ^3.1.0+1
   build_runner: ^2.4.9
   flutter_lints: ^4.0.0
+  flutter_launcher_icons: ^0.14.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/icons/
   fonts: []
+
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/icons/app_logo.png"
+  adaptive_icon_background: "#FFFFFF"

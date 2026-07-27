@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../core/models/enums.dart';
 import '../core/models/subject.dart';
 import '../core/services/dashboard_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
-import '../utils/constants.dart';
 import '../utils/date_utils.dart';
+import '../widgets/common/empty_state.dart';
+import '../widgets/common/section_header.dart';
 import '../widgets/placeholder_view.dart';
 import 'lecture_detail_screen.dart';
 import 'revision_screen.dart';
@@ -58,9 +60,17 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  String get _greeting {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'Good morning';
+    if (hour < 17) return 'Good afternoon';
+    return 'Good evening';
+  }
+
   @override
   Widget build(BuildContext context) {
     final active = context.watch<SemesterProvider>().active;
+    final theme = Theme.of(context);
 
     if (active == null) {
       return Scaffold(
@@ -78,10 +88,13 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton(
-                onPressed: () => context.read<NavProvider>().setIndex(1),
-                child: const Text('Go to Semester'),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  child: const Text('Go to Semester'),
+                ),
               ),
             ),
           ],
@@ -94,82 +107,76 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Home · ${active.name}'),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh',
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => _load(active.id),
-          ),
-        ],
-      ),
-      body: FutureBuilder<DashboardData>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          final data = snapshot.data!;
+      body: SafeArea(
+        child: FutureBuilder<DashboardData>(
+          future: _future,
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const Center(child: CircularProgressIndicator());
+            }
+            final data = snapshot.data!;
 
-          return RefreshIndicator(
-            onRefresh: () async => _load(active.id),
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const _SectionHeader(
-                  icon: Icons.today_rounded,
-                  title: "Today's Classes",
+            return RefreshIndicator(
+              onRefresh: () async => _load(active.id),
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.xs,
+                  AppSpacing.md,
+                  AppSpacing.xxl,
                 ),
-                if (data.todayClasses.isEmpty)
-                  const _EmptySectionCard(text: 'No classes scheduled today.')
-                else
-                  ...data.todayClasses.map((c) => Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
-                            child: Text(c.entry.sessionType.codeInitial),
-                          ),
-                          title: Text(c.subject.name),
-                          subtitle: Text(
-                            '${c.entry.timeRangeLabel} · '
-                            '${c.entry.sessionType.label}'
-                            '${c.teacher != null ? ' · ${c.teacher!.name}' : ''}'
-                            '${c.entry.room != null ? ' · ${c.entry.room}' : ''}',
-                          ),
+                children: [
+                  _HomeHeader(
+                    greeting: _greeting,
+                    semesterName: active.name,
+                    onRefresh: () => _load(active.id),
+                  ),
+                  const SizedBox(height: AppSpacing.lg),
+
+                  const SectionHeader(
+                    icon: Icons.today_rounded,
+                    title: "Today's Classes",
+                  ),
+                  if (data.todayClasses.isEmpty)
+                    const InlineEmptyState(
+                      icon: Icons.free_breakfast_outlined,
+                      text: 'No classes scheduled today. Enjoy the break!',
+                    )
+                  else
+                    ...data.todayClasses.map(
+                      (c) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: _TodayClassCard(
+                          todayClass: c,
                           onTap: () => _openSubject(
                             c.subject,
                             section: _sectionFor(c.entry.sessionType),
                           ),
                         ),
-                      )),
-                const SizedBox(height: 24),
+                      ),
+                    ),
+                  const SizedBox(height: AppSpacing.xl),
 
-                const _SectionHeader(
-                  icon: Icons.upload_file_rounded,
-                  title: 'Recent Uploads',
-                ),
-                if (data.recentUploads.isEmpty)
-                  const _EmptySectionCard(text: 'Nothing uploaded yet.')
-                else
-                  ...data.recentUploads.map((u) => Card(
-                        child: ListTile(
-                          leading: Icon(
-                            u.kind == RecentUploadKind.lecture
-                                ? Icons.photo_camera_outlined
-                                : Icons.description_outlined,
-                          ),
-                          title: Text(u.title),
-                          subtitle: Text(
-                            '${u.subject.name} · ${AppDateUtils.short(u.timestamp)}',
-                          ),
+                  const SectionHeader(
+                    icon: Icons.upload_file_rounded,
+                    title: 'Recent Uploads',
+                  ),
+                  if (data.recentUploads.isEmpty)
+                    const InlineEmptyState(
+                      icon: Icons.cloud_off_outlined,
+                      text: 'Nothing uploaded yet.',
+                    )
+                  else
+                    ..._withDividers(
+                      data.recentUploads.map(
+                        (u) => _UploadTile(
+                          upload: u,
                           onTap: () => u.kind == RecentUploadKind.lecture
                               ? Navigator.of(context).push(
                                   MaterialPageRoute(
-                                    builder: (_) =>
-                                        LectureDetailScreen(lecture: u.lecture!),
+                                    builder: (_) => LectureDetailScreen(
+                                      lecture: u.lecture!,
+                                    ),
                                   ),
                                 )
                               : _openSubject(
@@ -177,26 +184,26 @@ class _HomeScreenState extends State<HomeScreen> {
                                   section: SubjectSection.resources,
                                 ),
                         ),
-                      )),
-                const SizedBox(height: 24),
+                      ),
+                      theme,
+                    ),
+                  const SizedBox(height: AppSpacing.xl),
 
-                const _SectionHeader(
-                  icon: Icons.pending_actions_rounded,
-                  title: 'Pending AI',
-                ),
-                if (data.pendingAi.isEmpty)
-                  const _EmptySectionCard(
-                    text: 'Every lecture has been reviewed — nothing waiting.',
-                  )
-                else
-                  ...data.pendingAi.map((p) => Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.hourglass_empty_rounded),
-                          title: Text(p.lecture.lectureCode),
-                          subtitle: Text(
-                            '${p.subject.name} · not reviewed yet — tap to '
-                            'run OCR',
-                          ),
+                  const SectionHeader(
+                    icon: Icons.pending_actions_rounded,
+                    title: 'Pending AI',
+                  ),
+                  if (data.pendingAi.isEmpty)
+                    const InlineEmptyState(
+                      icon: Icons.check_circle_outline_rounded,
+                      text:
+                          'Every lecture has been reviewed — nothing waiting.',
+                    )
+                  else
+                    ..._withDividers(
+                      data.pendingAi.map(
+                        (p) => _PendingAiTile(
+                          pending: p,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) =>
@@ -204,123 +211,387 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-                      )),
-                const SizedBox(height: 24),
-
-                const _SectionHeader(icon: Icons.search_rounded, title: 'Quick Search'),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.search_rounded),
-                    title: const Text('Search this semester'),
-                    subtitle: const Text(
-                      'Lectures, resources, and syllabus — by content',
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => context.read<NavProvider>().setIndex(4),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                const _SectionHeader(icon: Icons.star_rounded, title: 'Revision'),
-                Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.star_rounded),
-                    title: const Text('Starred lectures'),
-                    subtitle: const Text(
-                      'Review starred lectures or generate combined notes',
-                    ),
-                    trailing: const Icon(Icons.chevron_right_rounded),
-                    onTap: () => Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => RevisionScreen(semesterId: active.id),
                       ),
+                      theme,
                     ),
-                  ),
-                ),
-                const SizedBox(height: 24),
+                  const SizedBox(height: AppSpacing.xl),
 
-                const _SectionHeader(
-                  icon: Icons.push_pin_rounded,
-                  title: 'Pinned Subjects',
-                ),
-                if (data.pinnedSubjects.isEmpty)
-                  const _EmptySectionCard(
-                    text: 'Pin a subject from its workspace to see it here.',
-                  )
-                else
-                  ...data.pinnedSubjects.map((s) => Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context)
-                                .colorScheme
-                                .primaryContainer,
-                            child: Text(
-                              s.name.isNotEmpty ? s.name[0].toUpperCase() : '?',
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _QuickAccessCard(
+                          icon: Icons.search_rounded,
+                          label: 'Search',
+                          subtitle: 'By content',
+                          onTap: () =>
+                              context.read<NavProvider>().setIndex(4),
+                        ),
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: _QuickAccessCard(
+                          icon: Icons.star_rounded,
+                          label: 'Revision',
+                          subtitle: 'Starred lectures',
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  RevisionScreen(semesterId: active.id),
                             ),
                           ),
-                          title: Text(s.name),
-                          trailing: const Icon(Icons.chevron_right_rounded),
-                          onTap: () => _openSubject(s),
-                        ),
-                      )),
-                if (data.todayClasses.isEmpty && data.recentUploads.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 24),
-                    child: OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              TimetableUploadScreen(semesterId: active.id),
                         ),
                       ),
-                      icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text('Upload Timetable'),
-                    ),
+                    ],
                   ),
-              ],
-            ),
-          );
-        },
+                  const SizedBox(height: AppSpacing.xl),
+
+                  const SectionHeader(
+                    icon: Icons.push_pin_rounded,
+                    title: 'Pinned Subjects',
+                  ),
+                  if (data.pinnedSubjects.isEmpty)
+                    const InlineEmptyState(
+                      icon: Icons.push_pin_outlined,
+                      text: 'Pin a subject from its workspace to see it here.',
+                    )
+                  else
+                    ..._withDividers(
+                      data.pinnedSubjects.map(
+                        (s) => _PinnedSubjectTile(
+                          subject: s,
+                          onTap: () => _openSubject(s),
+                        ),
+                      ),
+                      theme,
+                    ),
+
+                  if (data.todayClasses.isEmpty &&
+                      data.recentUploads.isEmpty) ...[
+                    const SizedBox(height: AppSpacing.xl),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => TimetableUploadScreen(
+                              semesterId: active.id,
+                            ),
+                          ),
+                        ),
+                        icon: const Icon(Icons.upload_file_rounded),
+                        label: const Text('Upload Timetable'),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        ),
       ),
     );
   }
+
+  /// Wraps a list of section rows into a single soft-bordered card with
+  /// thin dividers between rows, so a section reads as one cohesive
+  /// surface instead of a stack of separate cards.
+  List<Widget> _withDividers(Iterable<Widget> rows, ThemeData theme) {
+    final list = rows.toList();
+    return [
+      Container(
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surfaceContainerHigh,
+          borderRadius: AppRadius.lgRadius,
+          border: Border.all(color: theme.colorScheme.outlineVariant),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: [
+            for (var i = 0; i < list.length; i++) ...[
+              if (i > 0) Divider(height: 1, color: theme.colorScheme.outlineVariant),
+              list[i],
+            ],
+          ],
+        ),
+      ),
+    ];
+  }
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.icon, required this.title});
+class _HomeHeader extends StatelessWidget {
+  const _HomeHeader({
+    required this.greeting,
+    required this.semesterName,
+    required this.onRefresh,
+  });
 
-  final IconData icon;
-  final String title;
+  final String greeting;
+  final String semesterName;
+  final VoidCallback onRefresh;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        children: [
-          Icon(icon, size: 20, color: theme.colorScheme.primary),
-          const SizedBox(width: 8),
-          Text(title, style: theme.textTheme.titleMedium),
-        ],
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                greeting,
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(semesterName, style: theme.textTheme.headlineSmall),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surfaceContainerHigh,
+            borderRadius: AppRadius.mdRadius,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          child: IconButton(
+            tooltip: 'Refresh',
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: onRefresh,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TodayClassCard extends StatelessWidget {
+  const _TodayClassCard({required this.todayClass, required this.onTap});
+
+  final TodayClass todayClass;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final subject = todayClass.subject;
+    final entry = todayClass.entry;
+    final color = SubjectPalette.colorFor(subject.id);
+
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      borderRadius: AppRadius.lgRadius,
+      child: InkWell(
+        borderRadius: AppRadius.lgRadius,
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.lgRadius,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          padding: const EdgeInsets.all(AppSpacing.sm),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                foregroundColor: color,
+                child: Text(
+                  entry.sessionType.codeInitial,
+                  style: const TextStyle(fontWeight: FontWeight.w800),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(subject.name, style: theme.textTheme.titleSmall),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${entry.timeRangeLabel} · ${entry.sessionType.label}'
+                      '${todayClass.teacher != null ? ' · ${todayClass.teacher!.name}' : ''}'
+                      '${entry.room != null ? ' · ${entry.room}' : ''}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }
 }
 
-class _EmptySectionCard extends StatelessWidget {
-  const _EmptySectionCard({required this.text});
+class _UploadTile extends StatelessWidget {
+  const _UploadTile({required this.upload, required this.onTap});
 
-  final String text;
+  final RecentUpload upload;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+    final theme = Theme.of(context);
+    final isLecture = upload.kind == RecentUploadKind.lecture;
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.primaryContainer,
+          borderRadius: AppRadius.smRadius,
+        ),
+        child: Icon(
+          isLecture ? Icons.photo_camera_outlined : Icons.description_outlined,
+          size: 20,
+          color: theme.colorScheme.primary,
+        ),
+      ),
+      title: Text(upload.title, style: theme.textTheme.titleSmall),
+      subtitle: Text(
+        '${upload.subject.name} · ${AppDateUtils.short(upload.timestamp)}',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: theme.colorScheme.onSurfaceVariant, size: 20),
+    );
+  }
+}
+
+class _PendingAiTile extends StatelessWidget {
+  const _PendingAiTile({required this.pending, required this.onTap});
+
+  final PendingAiLecture pending;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: theme.colorScheme.tertiaryContainer,
+          borderRadius: AppRadius.smRadius,
+        ),
+        child: Icon(Icons.hourglass_empty_rounded,
+            size: 20, color: theme.colorScheme.tertiary),
+      ),
+      title: Text(pending.lecture.lectureCode, style: theme.textTheme.titleSmall),
+      subtitle: Text(
+        '${pending.subject.name} · not reviewed yet — tap to run OCR',
+        style: theme.textTheme.bodySmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: theme.colorScheme.onSurfaceVariant, size: 20),
+    );
+  }
+}
+
+class _PinnedSubjectTile extends StatelessWidget {
+  const _PinnedSubjectTile({required this.subject, required this.onTap});
+
+  final Subject subject;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = SubjectPalette.colorFor(subject.id);
+    return ListTile(
+      onTap: onTap,
+      leading: CircleAvatar(
+        backgroundColor: color.withOpacity(0.15),
+        foregroundColor: color,
         child: Text(
-          text,
-          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+          subject.name.isNotEmpty ? subject.name[0].toUpperCase() : '?',
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      title: Text(subject.name, style: theme.textTheme.titleSmall),
+      trailing: Icon(Icons.chevron_right_rounded,
+          color: theme.colorScheme.onSurfaceVariant, size: 20),
+    );
+  }
+}
+
+class _QuickAccessCard extends StatelessWidget {
+  const _QuickAccessCard({
+    required this.icon,
+    required this.label,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: theme.colorScheme.surfaceContainerHigh,
+      borderRadius: AppRadius.lgRadius,
+      child: InkWell(
+        borderRadius: AppRadius.lgRadius,
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: AppRadius.lgRadius,
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: AppRadius.smRadius,
+                ),
+                child: Icon(icon, size: 20, color: theme.colorScheme.primary),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              Text(label, style: theme.textTheme.titleSmall),
+              const SizedBox(height: 2),
+              Text(
+                subtitle,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
