@@ -9,8 +9,10 @@ import '../core/models/lecture.dart';
 import '../core/services/gemini_service.dart';
 import '../core/services/lecture_service.dart';
 import '../core/services/text_extraction_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../screens/settings_screen.dart';
 import '../utils/date_utils.dart';
+import '../widgets/common/section_header.dart';
 
 /// Phase 9 — OCR: "Image -> OCR -> Editable Text. User can edit
 /// mistakes. Save. Never OCR again."
@@ -231,13 +233,13 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                         children: [
                           Image.file(File(lecture.imagePath), fit: BoxFit.cover),
                           Positioned(
-                            right: 8,
-                            bottom: 8,
+                            right: AppSpacing.xs,
+                            bottom: AppSpacing.xs,
                             child: Container(
                               padding: const EdgeInsets.all(6),
                               decoration: BoxDecoration(
                                 color: Colors.black54,
-                                borderRadius: BorderRadius.circular(8),
+                                borderRadius: AppRadius.smRadius,
                               ),
                               child: const Icon(
                                 Icons.zoom_in_rounded,
@@ -251,7 +253,12 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                    padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md,
+                      AppSpacing.sm,
+                      AppSpacing.md,
+                      AppSpacing.xxs,
+                    ),
                     child: Row(
                       children: [
                         Expanded(
@@ -271,13 +278,21 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                   const Divider(height: 1),
                   _runningOcr
                       ? const Padding(
-                          padding: EdgeInsets.all(32),
+                          padding: EdgeInsets.all(AppSpacing.xxl),
                           child: Center(child: CircularProgressIndicator()),
                         )
                       : Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: SizedBox(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          child: Container(
                             height: 220,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md,
+                              vertical: AppSpacing.xs,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerLow,
+                              borderRadius: AppRadius.lgRadius,
+                            ),
                             child: TextField(
                               controller: _controller,
                               maxLines: null,
@@ -293,16 +308,21 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                           ),
                         ),
                   if (!_runningOcr) ...[
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                      child: Text('AI Features', style: theme.textTheme.titleMedium),
+                    const SectionHeader(
+                      icon: Icons.auto_awesome_rounded,
+                      title: 'AI Features',
+                      padding: EdgeInsets.fromLTRB(
+                        AppSpacing.md,
+                        AppSpacing.md,
+                        AppSpacing.md,
+                        AppSpacing.xs,
+                      ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
                       child: Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
+                        spacing: AppSpacing.xs,
+                        runSpacing: AppSpacing.xs,
                         children: AiAction.values.map((action) {
                           final selected = _activeAction == action;
                           return ChoiceChip(
@@ -317,7 +337,7 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(AppSpacing.md),
                       child: _buildAiResultArea(theme),
                     ),
                   ],
@@ -325,20 +345,32 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
               ),
             ),
           ),
-          SafeArea(
-            top: false,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton.icon(
-                onPressed: (_runningOcr || _saving || !_dirty) ? null : _save,
-                icon: _saving
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.save_outlined),
-                label: Text(_saving ? 'Saving…' : 'Save Text'),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerLow,
+              border: Border(
+                top: BorderSide(color: theme.colorScheme.outlineVariant),
+              ),
+            ),
+            child: SafeArea(
+              top: false,
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed:
+                        (_runningOcr || _saving || !_dirty) ? null : _save,
+                    icon: _saving
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.save_outlined),
+                    label: Text(_saving ? 'Saving…' : 'Save Text'),
+                  ),
+                ),
               ),
             ),
           ),
@@ -356,7 +388,7 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
             width: 18,
             child: CircularProgressIndicator(strokeWidth: 2),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm),
           Text('Asking Gemini for ${_activeAction?.label.toLowerCase()}…'),
         ],
       );
@@ -365,23 +397,23 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     if (_aiError != null) {
       final keyMissing = _aiError!.startsWith('No Gemini API key');
       return Container(
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: theme.colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.mdRadius,
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(Icons.error_outline_rounded, color: theme.colorScheme.onErrorContainer),
-            const SizedBox(width: 8),
+            const SizedBox(width: AppSpacing.xs),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(_aiError!, style: TextStyle(color: theme.colorScheme.onErrorContainer)),
                   if (keyMissing) ...[
-                    const SizedBox(height: 8),
+                    const SizedBox(height: AppSpacing.xs),
                     TextButton(
                       onPressed: () => Navigator.of(context).push(
                         MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -400,10 +432,11 @@ class _LectureDetailScreenState extends State<LectureDetailScreen> {
     if (_aiResult != null) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(12),
+        padding: const EdgeInsets.all(AppSpacing.sm),
         decoration: BoxDecoration(
           color: theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: AppRadius.mdRadius,
+          boxShadow: softShadow(context, strength: 0.6),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,

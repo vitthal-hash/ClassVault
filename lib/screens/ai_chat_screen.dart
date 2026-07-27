@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../core/models/subject.dart';
 import '../core/services/subject_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
 import '../widgets/placeholder_view.dart';
@@ -36,10 +37,13 @@ class AiChatScreen extends StatelessWidget {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton(
-                onPressed: () => context.read<NavProvider>().setIndex(1),
-                child: const Text('Go to Semester'),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  child: const Text('Go to Semester'),
+                ),
               ),
             ),
           ],
@@ -70,10 +74,14 @@ class AiChatScreen extends StatelessWidget {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FilledButton(
-                    onPressed: () => context.read<NavProvider>().setIndex(2),
-                    child: const Text('Go to Subjects'),
+                  padding: const EdgeInsets.all(AppSpacing.md),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: () =>
+                          context.read<NavProvider>().setIndex(2),
+                      child: const Text('Go to Subjects'),
+                    ),
                   ),
                 ),
               ],
@@ -81,31 +89,80 @@ class AiChatScreen extends StatelessWidget {
           }
 
           return ListView.separated(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.xs,
+              AppSpacing.md,
+              AppSpacing.xxxl,
+            ),
             itemCount: subjects.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemBuilder: (context, i) {
-              final subject = subjects[i];
-              return Card(
-                child: ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor:
-                        Theme.of(context).colorScheme.primaryContainer,
-                    child: const Icon(Icons.smart_toy_outlined),
-                  ),
-                  title: Text(subject.name),
-                  subtitle: const Text('Ask about lectures, resources, syllabus'),
-                  trailing: const Icon(Icons.chevron_right_rounded),
-                  onTap: () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => SubjectChatScreen(subject: subject),
-                    ),
-                  ),
-                ),
-              );
-            },
+            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+            itemBuilder: (context, i) => _SubjectChatCard(subject: subjects[i]),
           );
         },
+      ),
+    );
+  }
+}
+
+class _SubjectChatCard extends StatelessWidget {
+  const _SubjectChatCard({required this.subject});
+
+  final Subject subject;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = SubjectPalette.colorFor(subject.id);
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SubjectChatScreen(subject: subject),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              Container(
+                width: 4,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                foregroundColor: color,
+                child: const Icon(Icons.smart_toy_outlined),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(subject.name, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Ask about lectures, resources, syllabus',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
+          ),
+        ),
       ),
     );
   }

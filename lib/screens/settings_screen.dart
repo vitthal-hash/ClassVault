@@ -6,8 +6,9 @@ import '../core/models/enums.dart';
 import '../core/services/api_key_service.dart';
 import '../core/services/backup_service.dart';
 import '../core/services/settings_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../providers/settings_provider.dart';
-import '../utils/constants.dart';
+import '../widgets/common/section_header.dart';
 
 /// Settings — the plan's exact list: "Gemini API Key, OCR Language,
 /// Theme, Export Database, Import Database, Backup Folder, Clear
@@ -268,11 +269,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: _loadingKey
           ? const Center(child: CircularProgressIndicator())
           : ListView(
-              padding: const EdgeInsets.all(AppConstants.spaceM),
+              padding: const EdgeInsets.all(AppSpacing.md),
               children: [
                 // --- Gemini API Key (Phase 10) ---
-                Text('Gemini API Key', style: theme.textTheme.titleMedium),
-                const SizedBox(height: AppConstants.spaceXS),
+                const SectionHeader(
+                  icon: Icons.key_rounded,
+                  title: 'Gemini API Key',
+                ),
                 Text(
                   'Needed for AI features — Explain, Summarize, Key '
                   'Points, and Subject AI Chat. Stored securely on this '
@@ -280,7 +283,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppSpacing.md),
                 TextField(
                   controller: _apiKeyController,
                   obscureText: _obscureKey,
@@ -295,12 +298,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                 ),
-                const SizedBox(height: AppConstants.spaceS),
+                const SizedBox(height: AppSpacing.xs),
                 Row(
                   children: [
                     if (_hasSavedKey)
                       Padding(
-                        padding: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.only(right: AppSpacing.xs),
                         child: Icon(Icons.check_circle_rounded,
                             size: 16, color: theme.colorScheme.primary),
                       ),
@@ -312,7 +315,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppSpacing.md),
                 Row(
                   children: [
                     Expanded(
@@ -322,7 +325,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       ),
                     ),
                     if (_hasSavedKey) ...[
-                      const SizedBox(width: AppConstants.spaceS),
+                      const SizedBox(width: AppSpacing.xs),
                       OutlinedButton(
                         onPressed: _clearApiKey,
                         child: const Text('Remove'),
@@ -331,13 +334,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ],
                 ),
 
-                const SizedBox(height: AppConstants.spaceXL),
+                const SizedBox(height: AppSpacing.xxl),
                 Divider(color: theme.colorScheme.outlineVariant),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppSpacing.md),
 
                 // --- Theme ---
-                Text('Theme', style: theme.textTheme.titleMedium),
-                const SizedBox(height: AppConstants.spaceS),
+                const SectionHeader(
+                  icon: Icons.palette_outlined,
+                  title: 'Theme',
+                ),
                 SegmentedButton<ThemePreference>(
                   segments: [
                     for (final pref in ThemePreference.values)
@@ -352,9 +357,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
 
-                const SizedBox(height: AppConstants.spaceXL),
+                const SizedBox(height: AppSpacing.xxl),
                 Divider(color: theme.colorScheme.outlineVariant),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppSpacing.md),
 
                 // --- OCR Language, Backup Folder (live settings row) ---
                 StreamBuilder<AppSettings>(
@@ -367,9 +372,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('OCR Language',
-                            style: theme.textTheme.titleMedium),
-                        const SizedBox(height: AppConstants.spaceXS),
+                        const SectionHeader(
+                          icon: Icons.translate_rounded,
+                          title: 'OCR Language',
+                          padding: EdgeInsets.only(bottom: AppSpacing.xs, top: AppSpacing.xxs),
+                        ),
                         Text(
                           'ML Kit recognizes text by script, not by '
                           'individual language — pick whichever covers '
@@ -377,7 +384,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant),
                         ),
-                        const SizedBox(height: AppConstants.spaceS),
+                        const SizedBox(height: AppSpacing.xs),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: const Icon(Icons.translate_rounded),
@@ -385,10 +392,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: () => _pickOcrScript(ocrScript),
                         ),
-                        const SizedBox(height: AppConstants.spaceL),
-                        Text('Backup Folder',
-                            style: theme.textTheme.titleMedium),
-                        const SizedBox(height: AppConstants.spaceXS),
+                        const SizedBox(height: AppSpacing.xl),
+                        const SectionHeader(
+                          icon: Icons.folder_outlined,
+                          title: 'Backup Folder',
+                          padding: EdgeInsets.only(bottom: AppSpacing.xs),
+                        ),
                         Text(
                           'A full copy of every subject\'s files plus the '
                           'database — stays on this device or wherever '
@@ -397,7 +406,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           style: theme.textTheme.bodySmall?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant),
                         ),
-                        const SizedBox(height: AppConstants.spaceS),
+                        const SizedBox(height: AppSpacing.xs),
                         ListTile(
                           contentPadding: EdgeInsets.zero,
                           leading: const Icon(Icons.folder_outlined),
@@ -405,7 +414,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           trailing: const Icon(Icons.chevron_right_rounded),
                           onTap: _chooseBackupFolder,
                         ),
-                        const SizedBox(height: AppConstants.spaceS),
+                        const SizedBox(height: AppSpacing.xs),
                         FilledButton.icon(
                           onPressed: (backupFolder == null || _backingUp)
                               ? null
@@ -426,13 +435,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   },
                 ),
 
-                const SizedBox(height: AppConstants.spaceXL),
+                const SizedBox(height: AppSpacing.xxl),
                 Divider(color: theme.colorScheme.outlineVariant),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppSpacing.md),
 
                 // --- Export / Import Database ---
-                Text('Export Database', style: theme.textTheme.titleMedium),
-                const SizedBox(height: AppConstants.spaceXS),
+                const SectionHeader(
+                  icon: Icons.upload_file_outlined,
+                  title: 'Export Database',
+                ),
                 Text(
                   'Save just the database (semesters, subjects, '
                   'timetable, notes) as one file, to move it to another '
@@ -440,15 +451,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
-                const SizedBox(height: AppConstants.spaceS),
+                const SizedBox(height: AppSpacing.xs),
                 OutlinedButton.icon(
                   onPressed: _exportDatabase,
                   icon: const Icon(Icons.upload_file_outlined),
                   label: const Text('Export Database'),
                 ),
-                const SizedBox(height: AppConstants.spaceL),
-                Text('Import Database', style: theme.textTheme.titleMedium),
-                const SizedBox(height: AppConstants.spaceXS),
+                const SizedBox(height: AppSpacing.xl),
+                const SectionHeader(
+                  icon: Icons.download_outlined,
+                  title: 'Import Database',
+                ),
                 Text(
                   'Replaces all current data with a previously exported '
                   'file. The app needs to be closed and reopened '
@@ -456,7 +469,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
-                const SizedBox(height: AppConstants.spaceS),
+                const SizedBox(height: AppSpacing.xs),
                 OutlinedButton.icon(
                   onPressed: _importing ? null : _importDatabase,
                   icon: _importing
@@ -469,13 +482,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   label: Text(_importing ? 'Importing…' : 'Import Database'),
                 ),
 
-                const SizedBox(height: AppConstants.spaceXL),
+                const SizedBox(height: AppSpacing.xxl),
                 Divider(color: theme.colorScheme.outlineVariant),
-                const SizedBox(height: AppConstants.spaceM),
+                const SizedBox(height: AppSpacing.md),
 
                 // --- Clear Cache ---
-                Text('Clear Cache', style: theme.textTheme.titleMedium),
-                const SizedBox(height: AppConstants.spaceXS),
+                const SectionHeader(
+                  icon: Icons.cleaning_services_outlined,
+                  title: 'Clear Cache',
+                ),
                 Text(
                   "Frees temporary space the OS set aside for this app. "
                   "Doesn't touch any subject, lecture, or document — "
@@ -483,7 +498,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   style: theme.textTheme.bodySmall
                       ?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                 ),
-                const SizedBox(height: AppConstants.spaceS),
+                const SizedBox(height: AppSpacing.xs),
                 OutlinedButton.icon(
                   onPressed: _clearingCache ? null : _clearCache,
                   icon: _clearingCache

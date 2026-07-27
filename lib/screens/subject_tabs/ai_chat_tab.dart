@@ -163,44 +163,54 @@ class _AiChatTabState extends State<AiChatTab> {
   }
 
   Widget _buildInputBar({required bool hasHistory}) {
-    return SafeArea(
-      top: false,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Row(
-          children: [
-            IconButton(
-              tooltip: 'Clear chat',
-              icon: const Icon(Icons.delete_outline_rounded),
-              onPressed: hasHistory ? _confirmClear : null,
-            ),
-            Expanded(
-              child: TextField(
-                controller: _controller,
-                minLines: 1,
-                maxLines: 4,
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _send(),
-                decoration: InputDecoration(
-                  hintText: 'Ask about ${widget.subject.name}…',
-                  filled: true,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.radiusL),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 10,
+    final theme = Theme.of(context);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow,
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
+        ),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+          child: Row(
+            children: [
+              IconButton(
+                tooltip: 'Clear chat',
+                icon: const Icon(Icons.delete_outline_rounded),
+                onPressed: hasHistory ? _confirmClear : null,
+              ),
+              Expanded(
+                child: TextField(
+                  controller: _controller,
+                  minLines: 1,
+                  maxLines: 4,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: (_) => _send(),
+                  decoration: InputDecoration(
+                    hintText: 'Ask about ${widget.subject.name}…',
+                    filled: true,
+                    fillColor: theme.colorScheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(AppConstants.radiusL),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 10,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 8),
-            IconButton.filled(
-              onPressed: _sending ? null : _send,
-              icon: const Icon(Icons.arrow_upward_rounded),
-            ),
-          ],
+              const SizedBox(width: 8),
+              IconButton.filled(
+                onPressed: _sending ? null : _send,
+                icon: const Icon(Icons.arrow_upward_rounded),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -217,6 +227,13 @@ class _MessageBubble extends StatelessWidget {
     final theme = Theme.of(context);
     final isUser = message.role == ChatRole.user;
 
+    final radius = BorderRadius.only(
+      topLeft: const Radius.circular(AppConstants.radiusM),
+      topRight: const Radius.circular(AppConstants.radiusM),
+      bottomLeft: Radius.circular(isUser ? AppConstants.radiusM : 4),
+      bottomRight: Radius.circular(isUser ? 4 : AppConstants.radiusM),
+    );
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Container(
@@ -227,15 +244,15 @@ class _MessageBubble extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           color: isUser
-              ? theme.colorScheme.primaryContainer
+              ? theme.colorScheme.primary
               : theme.colorScheme.surfaceContainerHigh,
-          borderRadius: BorderRadius.circular(AppConstants.radiusM),
+          borderRadius: radius,
         ),
         child: SelectableText(
           message.content,
           style: TextStyle(
             color: isUser
-                ? theme.colorScheme.onPrimaryContainer
+                ? theme.colorScheme.onPrimary
                 : theme.colorScheme.onSurface,
           ),
         ),

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../core/services/search_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
 import '../utils/constants.dart';
@@ -145,10 +146,13 @@ class _SearchScreenState extends State<SearchScreen> {
               ),
             ),
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: FilledButton(
-                onPressed: () => context.read<NavProvider>().setIndex(1),
-                child: const Text('Go to Semester'),
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  child: const Text('Go to Semester'),
+                ),
               ),
             ),
           ],
@@ -171,7 +175,7 @@ class _SearchScreenState extends State<SearchScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(AppSpacing.md),
             child: TextField(
               controller: _controller,
               autofocus: false,
@@ -190,7 +194,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                 filled: true,
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppConstants.radiusL),
+                  borderRadius: AppRadius.lgRadius,
                   borderSide: BorderSide.none,
                 ),
               ),
@@ -227,26 +231,80 @@ class _SearchScreenState extends State<SearchScreen> {
     }
 
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       itemCount: _results.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) {
-        final result = _results[i];
-        return Card(
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-              child: Icon(_iconFor(result.kind)),
-            ),
-            title: Text(result.title),
-            subtitle: Text(
-              '${result.kind.label} · ${result.subject.name}\n${result.snippet}',
-            ),
-            isThreeLine: true,
-            onTap: () => _open(result),
+      separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
+      itemBuilder: (context, i) => _SearchResultCard(
+        result: _results[i],
+        icon: _iconFor(_results[i].kind),
+        onTap: () => _open(_results[i]),
+      ),
+    );
+  }
+}
+
+class _SearchResultCard extends StatelessWidget {
+  const _SearchResultCard({
+    required this.result,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final SearchResult result;
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final color = SubjectPalette.colorFor(result.subject.id);
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: color.withOpacity(0.15),
+                foregroundColor: color,
+                child: Icon(icon),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(result.title, style: theme.textTheme.titleMedium),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${result.kind.label} · ${result.subject.name}',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: color,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xxs),
+                    Text(
+                      result.snippet,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(Icons.chevron_right_rounded,
+                  color: theme.colorScheme.onSurfaceVariant),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

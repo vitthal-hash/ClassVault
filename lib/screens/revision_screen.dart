@@ -6,6 +6,7 @@ import 'package:share_plus/share_plus.dart';
 
 import '../core/services/gemini_service.dart';
 import '../core/services/revision_service.dart';
+import '../core/theme/app_tokens.dart';
 import '../utils/date_utils.dart';
 import '../widgets/placeholder_view.dart';
 import 'lecture_detail_screen.dart';
@@ -132,23 +133,41 @@ class _RevisionScreenState extends State<RevisionScreen> {
                 child: RefreshIndicator(
                   onRefresh: () async => _load(),
                   child: ListView(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     children: [
                       Text(
                         'Select lectures below and generate one combined '
                         'set of revision notes, or tap a lecture to open it.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: AppSpacing.sm),
                       for (final entry in bySubject.entries) ...[
-                        Text(
-                          entry.key,
-                          style: Theme.of(context)
-                              .textTheme
-                              .titleSmall
-                              ?.copyWith(fontWeight: FontWeight.w700),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: AppSpacing.xs),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 4,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: SubjectPalette.colorFor(
+                                    entry.value.first.subject.id,
+                                  ),
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.pill),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.xs),
+                              Text(
+                                entry.key,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleSmall
+                                    ?.copyWith(fontWeight: FontWeight.w700),
+                              ),
+                            ],
+                          ),
                         ),
-                        const SizedBox(height: 6),
                         ...entry.value.map((s) => _StarredLectureTile(
                               starred: s,
                               selected: _selectedLectureIds.contains(s.lecture.id),
@@ -160,11 +179,11 @@ class _RevisionScreenState extends State<RevisionScreen> {
                                 ),
                               ),
                             )),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: AppSpacing.md),
                       ],
                       if (_generating)
                         const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 16),
+                          padding: EdgeInsets.symmetric(vertical: AppSpacing.md),
                           child: Center(child: CircularProgressIndicator()),
                         ),
                       if (_generationError != null)
@@ -183,19 +202,32 @@ class _RevisionScreenState extends State<RevisionScreen> {
                   ),
                 ),
               ),
-              SafeArea(
-                top: false,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: FilledButton.icon(
-                    onPressed: (_selectedLectureIds.isEmpty || _generating)
-                        ? null
-                        : () => _generateNotes(starred),
-                    icon: const Icon(Icons.auto_awesome_rounded),
-                    label: Text(
-                      _selectedLectureIds.isEmpty
-                          ? 'Select lectures to generate notes'
-                          : 'Generate Notes (${_selectedLectureIds.length} selected)',
+              DecoratedBox(
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  border: Border(
+                    top: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                    ),
+                  ),
+                ),
+                child: SafeArea(
+                  top: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: FilledButton.icon(
+                        onPressed: (_selectedLectureIds.isEmpty || _generating)
+                            ? null
+                            : () => _generateNotes(starred),
+                        icon: const Icon(Icons.auto_awesome_rounded),
+                        label: Text(
+                          _selectedLectureIds.isEmpty
+                              ? 'Select lectures to generate notes'
+                              : 'Generate Notes (${_selectedLectureIds.length} selected)',
+                        ),
+                      ),
                     ),
                   ),
                 ),
@@ -224,10 +256,13 @@ class _StarredLectureTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lecture = starred.lecture;
+    final theme = Theme.of(context);
     return Card(
+      clipBehavior: Clip.antiAlias,
+      color: selected ? theme.colorScheme.primaryContainer.withOpacity(0.35) : null,
       child: ListTile(
         leading: ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: AppRadius.smRadius,
           child: Image.file(
             File(lecture.imagePath),
             width: 44,
@@ -257,24 +292,24 @@ class _ErrorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: AppSpacing.md),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.mdRadius,
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(Icons.error_outline_rounded, color: theme.colorScheme.onErrorContainer),
-          const SizedBox(width: 8),
+          const SizedBox(width: AppSpacing.xs),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(message, style: TextStyle(color: theme.colorScheme.onErrorContainer)),
                 if (showSettingsLink) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.xs),
                   TextButton(
                     onPressed: () => Navigator.of(context).push(
                       MaterialPageRoute(builder: (_) => const SettingsScreen()),
@@ -307,10 +342,11 @@ class _NotesResultCard extends StatelessWidget {
     final theme = Theme.of(context);
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(AppSpacing.sm),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHigh,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: AppRadius.mdRadius,
+        boxShadow: softShadow(context, strength: 0.6),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
