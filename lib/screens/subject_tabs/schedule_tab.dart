@@ -60,15 +60,18 @@ class ScheduleTab extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: OutlinedButton.icon(
-                onPressed: () => TimetableEntryFormSheet.showCreate(
-                  context,
-                  semesterId: subject.semesterId,
-                  subjectId: subject.id,
-                  sessionType: sessionType,
+              child: SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: () => TimetableEntryFormSheet.showCreate(
+                    context,
+                    semesterId: subject.semesterId,
+                    subjectId: subject.id,
+                    sessionType: sessionType,
+                  ),
+                  icon: const Icon(Icons.add_rounded),
+                  label: Text('Add ${sessionType.label} Slot'),
                 ),
-                icon: const Icon(Icons.add_rounded),
-                label: Text('Add ${sessionType.label} Slot'),
               ),
             ),
           ],

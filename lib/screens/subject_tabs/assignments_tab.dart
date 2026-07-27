@@ -78,10 +78,13 @@ class AssignmentsTab extends StatelessWidget {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: FilledButton.icon(
-                onPressed: () => CreateAssignmentSheet.show(context, subject),
-                icon: const Icon(Icons.add_rounded),
-                label: const Text('New Assignment'),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: () => CreateAssignmentSheet.show(context, subject),
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('New Assignment'),
+                ),
               ),
             ),
           ],

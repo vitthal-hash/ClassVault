@@ -184,16 +184,19 @@ class _LecturesTabState extends State<LecturesTab> {
         ),
         Padding(
           padding: const EdgeInsets.all(16),
-          child: FilledButton.icon(
-            onPressed: _capturing ? null : _showSourceSheet,
-            icon: _capturing
-                ? const SizedBox(
-                    height: 18,
-                    width: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.add_a_photo_outlined),
-            label: Text(_capturing ? 'Saving…' : 'Add Lecture'),
+          child: SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _capturing ? null : _showSourceSheet,
+              icon: _capturing
+                  ? const SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.add_a_photo_outlined),
+              label: Text(_capturing ? 'Saving…' : 'Add Lecture'),
+            ),
           ),
         ),
       ],

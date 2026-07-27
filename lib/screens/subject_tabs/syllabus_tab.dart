@@ -136,18 +136,21 @@ class _SyllabusTabState extends State<SyllabusTab> {
               ),
               Padding(
                 padding: const EdgeInsets.all(16),
-                child: FilledButton.icon(
-                  onPressed: _uploading ? null : _pickAndUpload,
-                  icon: _uploading
-                      ? const SizedBox(
-                          height: 18,
-                          width: 18,
-                          child:
-                              CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.upload_file_rounded),
-                  label: Text(
-                    _uploading ? 'Extracting…' : 'Upload Syllabus (PDF)',
+                child: SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: _uploading ? null : _pickAndUpload,
+                    icon: _uploading
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child:
+                                CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.upload_file_rounded),
+                    label: Text(
+                      _uploading ? 'Extracting…' : 'Upload Syllabus (PDF)',
+                    ),
                   ),
                 ),
               ),
@@ -178,34 +181,44 @@ class _SyllabusTabState extends State<SyllabusTab> {
               ),
             ),
             const SizedBox(height: 16),
-            OutlinedButton.icon(
-              onPressed: () =>
-                  _showExtractedText(syllabus.extractedText ?? ''),
-              icon: const Icon(Icons.article_outlined),
-              label: const Text('View extracted text'),
-            ),
-            const SizedBox(height: 10),
-            FilledButton.icon(
-              onPressed: _uploading ? null : _pickAndUpload,
-              icon: _uploading
-                  ? const SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Icon(Icons.refresh_rounded),
-              label: Text(_uploading ? 'Extracting…' : 'Replace Syllabus'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: () => _confirmDelete(syllabus),
-              icon: Icon(
-                Icons.delete_outline_rounded,
-                color: Theme.of(context).colorScheme.error,
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () =>
+                    _showExtractedText(syllabus.extractedText ?? ''),
+                icon: const Icon(Icons.article_outlined),
+                label: const Text('View extracted text'),
               ),
-              label: Text(
-                'Remove',
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: _uploading ? null : _pickAndUpload,
+                icon: _uploading
+                    ? const SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh_rounded),
+                label: Text(_uploading ? 'Extracting…' : 'Replace Syllabus'),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: () => _confirmDelete(syllabus),
+                icon: Icon(
+                  Icons.delete_outline_rounded,
+                  color: Theme.of(context).colorScheme.error,
+                ),
+                label: Text(
+                  'Remove',
+                  style:
+                      TextStyle(color: Theme.of(context).colorScheme.error),
+                ),
               ),
             ),
           ],

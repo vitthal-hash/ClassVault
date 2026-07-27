@@ -211,16 +211,19 @@ class _ResourcesTabState extends State<ResourcesTab> {
             ),
             Padding(
               padding: const EdgeInsets.all(16),
-              child: FilledButton.icon(
-                onPressed: _uploading ? null : _pickAndUpload,
-                icon: _uploading
-                    ? const SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.upload_file_rounded),
-                label: Text(_uploading ? 'Uploading…' : 'Upload Files'),
+              child: SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: _uploading ? null : _pickAndUpload,
+                  icon: _uploading
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.upload_file_rounded),
+                  label: Text(_uploading ? 'Uploading…' : 'Upload Files'),
+                ),
               ),
             ),
           ],
