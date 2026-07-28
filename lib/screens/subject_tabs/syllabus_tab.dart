@@ -7,6 +7,7 @@ import '../../core/models/subject.dart';
 import '../../core/models/syllabus.dart';
 import '../../core/services/syllabus_service.dart';
 import '../../utils/date_utils.dart';
+import '../../utils/file_opener.dart';
 import '../../widgets/placeholder_view.dart';
 
 /// Syllabus tab (Phase 5): upload a PDF once, text is extracted
@@ -178,9 +179,28 @@ class _SyllabusTabState extends State<SyllabusTab> {
                       : 'Uploaded ${AppDateUtils.short(syllabus.uploadedAt)} '
                           '· $charCount characters extracted',
                 ),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => openStoredFile(
+                  context,
+                  path: syllabus.filePath,
+                  title: syllabus.fileName,
+                ),
               ),
             ),
             const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () => openStoredFile(
+                  context,
+                  path: syllabus.filePath,
+                  title: syllabus.fileName,
+                ),
+                icon: const Icon(Icons.picture_as_pdf_rounded),
+                label: const Text('Open Syllabus'),
+              ),
+            ),
+            const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
@@ -193,7 +213,7 @@ class _SyllabusTabState extends State<SyllabusTab> {
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              child: FilledButton.icon(
+              child: OutlinedButton.icon(
                 onPressed: _uploading ? null : _pickAndUpload,
                 icon: _uploading
                     ? const SizedBox(

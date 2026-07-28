@@ -17,10 +17,16 @@ import 'subject_tabs/syllabus_tab.dart';
 /// Every subject becomes its own workspace with nine tabs, matching the
 /// project plan plus Notes (added on top of the plan, for the person's
 /// own free-form notes). Each tab's real content lives in its own file
-/// under `subject_tabs/` — this screen only owns the app bar, the tab
-/// shell, and the persistent "add a note" action that follows you
-/// across every tab.
-class SubjectWorkspaceScreen extends StatelessWidget {
+/// under `subject_tabs/` — this screen only owns the app bar and the
+/// tab shell.
+///
+/// The "add a note" action only floats on the Notes tab. It used to
+/// persist across every tab, but almost every other tab already has its
+/// own full-width bottom action bar (Add Lecture, Upload Files, Add
+/// Slot, the AI Chat input bar, …) — a Scaffold-level FAB floats at a
+/// fixed screen position regardless of tab content, so it was sitting
+/// directly on top of those buttons on every tab that had one.
+class SubjectWorkspaceScreen extends StatefulWidget {
   const SubjectWorkspaceScreen({
     super.key,
     required this.subject,
@@ -45,6 +51,32 @@ class SubjectWorkspaceScreen extends StatelessWidget {
     SubjectSection.notes,
     SubjectSection.aiChat,
   ];
+
+  @override
+  State<SubjectWorkspaceScreen> createState() => _SubjectWorkspaceScreenState();
+}
+
+class _SubjectWorkspaceScreenState extends State<SubjectWorkspaceScreen>
+    with SingleTickerProviderStateMixin {
+  late final TabController _tabController;
+
+  @override
+  void initState() {
+    super.initState();
+    final startIndex = SubjectWorkspaceScreen._sections
+        .indexOf(widget.initialSection ?? SubjectSection.theory);
+    _tabController = TabController(
+      length: SubjectWorkspaceScreen._sections.length,
+      initialIndex: startIndex < 0 ? 0 : startIndex,
+      vsync: this,
+    )..addListener(() => setState(() {}));
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
 
   Future<void> _confirmDeleteSubject(BuildContext context, Subject current) async {
     final confirmed = await showDialog<bool>(
@@ -86,138 +118,145 @@ class SubjectWorkspaceScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final startIndex = _sections.indexOf(initialSection ?? SubjectSection.theory);
+    final sections = SubjectWorkspaceScreen._sections;
+    final currentSection = sections[_tabController.index];
 
-    return DefaultTabController(
-      length: _sections.length,
-      initialIndex: startIndex < 0 ? 0 : startIndex,
-      child: Scaffold(
-        appBar: AppBar(
-          title: StreamBuilder<Subject?>(
-            // Re-reads the subject so a code edit or pin toggle made
-            // from this same screen shows up immediately in the title
-            // and menu without navigating away and back.
-            stream: SubjectService.instance.watchById(subject.id),
-            initialData: subject,
+    return Scaffold(
+      appBar: AppBar(
+        title: StreamBuilder<Subject?>(
+          // Re-reads the subject so a code edit or pin toggle made
+          // from this same screen shows up immediately in the title
+          // and menu without navigating away and back.
+          stream: SubjectService.instance.watchById(widget.subject.id),
+          initialData: widget.subject,
+          builder: (context, snapshot) {
+            final current = snapshot.data ?? widget.subject;
+            return Text(
+              current.code == null
+                  ? current.name
+                  : '${current.name} · ${current.code}',
+            );
+          },
+        ),
+        actions: [
+          StreamBuilder<Subject?>(
+            stream: SubjectService.instance.watchById(widget.subject.id),
+            initialData: widget.subject,
             builder: (context, snapshot) {
-              final current = snapshot.data ?? subject;
-              return Text(
-                current.code == null
-                    ? current.name
-                    : '${current.name} · ${current.code}',
+              final current = snapshot.data ?? widget.subject;
+              return PopupMenuButton<String>(
+                onSelected: (value) {
+                  switch (value) {
+                    case 'pin':
+                      SubjectService.instance.togglePin(current);
+                      break;
+                    case 'code':
+                      EditSubjectCodeSheet.show(context, current);
+                      break;
+                    case 'delete':
+                      _confirmDeleteSubject(context, current);
+                      break;
+                  }
+                },
+                itemBuilder: (context) => [
+                  PopupMenuItem(
+                    value: 'pin',
+                    child: ListTile(
+                      leading: Icon(
+                        current.isPinned
+                            ? Icons.push_pin_rounded
+                            : Icons.push_pin_outlined,
+                      ),
+                      title: Text(
+                        current.isPinned ? 'Unpin from Home' : 'Pin to Home',
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'code',
+                    child: ListTile(
+                      leading: Icon(Icons.sell_outlined),
+                      title: Text('Edit subject code'),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                  const PopupMenuDivider(),
+                  PopupMenuItem(
+                    value: 'delete',
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.delete_outline_rounded,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      title: Text(
+                        'Delete subject',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      contentPadding: EdgeInsets.zero,
+                    ),
+                  ),
+                ],
               );
             },
           ),
-          actions: [
-            StreamBuilder<Subject?>(
-              stream: SubjectService.instance.watchById(subject.id),
-              initialData: subject,
-              builder: (context, snapshot) {
-                final current = snapshot.data ?? subject;
-                return PopupMenuButton<String>(
-                  onSelected: (value) {
-                    switch (value) {
-                      case 'pin':
-                        SubjectService.instance.togglePin(current);
-                        break;
-                      case 'code':
-                        EditSubjectCodeSheet.show(context, current);
-                        break;
-                      case 'delete':
-                        _confirmDeleteSubject(context, current);
-                        break;
-                    }
-                  },
-                  itemBuilder: (context) => [
-                    PopupMenuItem(
-                      value: 'pin',
-                      child: ListTile(
-                        leading: Icon(
-                          current.isPinned
-                              ? Icons.push_pin_rounded
-                              : Icons.push_pin_outlined,
-                        ),
-                        title: Text(
-                          current.isPinned ? 'Unpin from Home' : 'Pin to Home',
-                        ),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const PopupMenuItem(
-                      value: 'code',
-                      child: ListTile(
-                        leading: Icon(Icons.sell_outlined),
-                        title: Text('Edit subject code'),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                    const PopupMenuDivider(),
-                    PopupMenuItem(
-                      value: 'delete',
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.delete_outline_rounded,
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                        title: Text(
-                          'Delete subject',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
-                        contentPadding: EdgeInsets.zero,
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: true,
+          tabs: [
+            for (final section in sections)
+              Tab(icon: Icon(section.icon), text: section.label),
           ],
-          bottom: TabBar(
-            isScrollable: true,
-            tabs: [
-              for (final section in _sections)
-                Tab(icon: Icon(section.icon), text: section.label),
-            ],
-          ),
-        ),
-        body: TabBarView(
-          children: [
-            for (final section in _sections) _buildTab(section),
-          ],
-        ),
-        floatingActionButton: FloatingActionButton(
-          tooltip: 'Add a note',
-          onPressed: () => NoteEditorSheet.showNew(context, subjectId: subject.id),
-          child: const Icon(Icons.note_add_outlined),
         ),
       ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          for (final section in sections) _buildTab(section),
+        ],
+      ),
+      // Only on Notes: every other tab already has its own full-width
+      // bottom action (Add Lecture, Upload Files, Add Slot, the AI Chat
+      // input bar, …), and a Scaffold FAB floats at a fixed position
+      // regardless of which tab is showing, so it used to sit right on
+      // top of those buttons.
+      floatingActionButton: currentSection == SubjectSection.notes
+          ? FloatingActionButton(
+              tooltip: 'Add a note',
+              onPressed: () =>
+                  NoteEditorSheet.showNew(context, subjectId: widget.subject.id),
+              child: const Icon(Icons.note_add_outlined),
+            )
+          : null,
     );
   }
 
   Widget _buildTab(SubjectSection section) {
     switch (section) {
       case SubjectSection.theory:
-        return ScheduleTab(subject: subject, sessionType: SessionType.theory);
+        return ScheduleTab(subject: widget.subject, sessionType: SessionType.theory);
       case SubjectSection.lab:
-        return ScheduleTab(subject: subject, sessionType: SessionType.lab);
+        return ScheduleTab(subject: widget.subject, sessionType: SessionType.lab);
       case SubjectSection.tutorial:
         return ScheduleTab(
-          subject: subject,
+          subject: widget.subject,
           sessionType: SessionType.tutorial,
         );
       case SubjectSection.syllabus:
-        return SyllabusTab(subject: subject);
+        return SyllabusTab(subject: widget.subject);
       case SubjectSection.resources:
-        return ResourcesTab(subject: subject);
+        return ResourcesTab(subject: widget.subject);
       case SubjectSection.lectures:
-        return LecturesTab(subject: subject);
+        return LecturesTab(subject: widget.subject);
       case SubjectSection.assignments:
-        return AssignmentsTab(subject: subject);
+        return AssignmentsTab(subject: widget.subject);
       case SubjectSection.notes:
-        return NotesTab(subject: subject);
+        return NotesTab(subject: widget.subject);
       case SubjectSection.aiChat:
-        return AiChatTab(subject: subject);
+        return AiChatTab(subject: widget.subject);
     }
   }
 }

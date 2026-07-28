@@ -8,9 +8,10 @@ import '../../widgets/note_editor_sheet.dart';
 import '../../widgets/placeholder_view.dart';
 
 /// Notes tab: every quick note written for this subject, newest first.
-/// Adding a new one is via the Subject Workspace's persistent "+"
-/// action (available on every tab, not just this one) — this tab is
-/// purely for browsing, reopening, and deleting what's already there.
+/// Adding a new one is via this tab's own floating "+" action — the
+/// Subject Workspace only shows that FAB while this tab is active, so
+/// it never sits on top of another tab's own bottom action bar (Add
+/// Lecture, Upload Files, the AI Chat input bar, …).
 class NotesTab extends StatelessWidget {
   const NotesTab({super.key, required this.subject});
 
@@ -28,9 +29,8 @@ class NotesTab extends StatelessWidget {
             icon: Icons.sticky_note_2_outlined,
             title: 'No notes yet',
             subtitle:
-                'Tap the + button anywhere in ${subject.name} to jot down '
-                'what was taught, a reminder, or anything else worth '
-                'keeping.',
+                'Tap the + button below to jot down what was taught, a '
+                'reminder, or anything else worth keeping.',
           );
         }
 

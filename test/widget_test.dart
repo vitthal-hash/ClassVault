@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:academic_assistant/utils/constants.dart';
+import 'package:classvault/utils/constants.dart';
 
 // The default `flutter create` template ships a smoke test for a
 // counter app that references a `MyApp` class this project never had —

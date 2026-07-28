@@ -8,6 +8,7 @@ import '../../core/models/resource.dart';
 import '../../core/models/subject.dart';
 import '../../core/services/resource_service.dart';
 import '../../utils/date_utils.dart';
+import '../../utils/file_opener.dart';
 import '../../widgets/placeholder_view.dart';
 
 /// Resource Manager tab (Phase 6): upload any mix of PDF/PPT/Word/Image
@@ -93,19 +94,10 @@ class _ResourcesTabState extends State<ResourcesTab> {
     }
   }
 
-  void _openResource(Resource resource) {
-    if (!resource.type.supportsExtraction) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Text extraction for ${resource.type.label} files is coming '
-            'in a later phase — for now the file is just stored.',
-          ),
-        ),
-      );
-      return;
-    }
+  Future<void> _openResource(Resource resource) =>
+      openStoredFile(context, path: resource.filePath, title: resource.name);
 
+  void _showExtractedText(Resource resource) {
     final text = resource.extractedText ?? '';
     showModalBottomSheet(
       context: context,
@@ -119,11 +111,19 @@ class _ResourcesTabState extends State<ResourcesTab> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                resource.name,
+                'Extracted text · ${resource.name}',
                 style: Theme.of(context)
                     .textTheme
                     .titleLarge
                     ?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'Used for search and AI features — the original file is '
+                'unchanged.',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
               ),
               const SizedBox(height: 12),
               Expanded(
@@ -199,10 +199,41 @@ class _ResourcesTabState extends State<ResourcesTab> {
                               '${hasText ? ' · text extracted' : ''}',
                             ),
                             onTap: () => _openResource(resource),
-                            trailing: IconButton(
-                              tooltip: 'Remove',
-                              icon: const Icon(Icons.delete_outline_rounded),
-                              onPressed: () => _confirmDelete(resource),
+                            trailing: PopupMenuButton<String>(
+                              onSelected: (value) {
+                                switch (value) {
+                                  case 'open':
+                                    _openResource(resource);
+                                  case 'text':
+                                    _showExtractedText(resource);
+                                  case 'remove':
+                                    _confirmDelete(resource);
+                                }
+                              },
+                              itemBuilder: (context) => [
+                                const PopupMenuItem(
+                                  value: 'open',
+                                  child: ListTile(
+                                    leading: Icon(Icons.open_in_new_rounded),
+                                    title: Text('Open'),
+                                  ),
+                                ),
+                                if (hasText)
+                                  const PopupMenuItem(
+                                    value: 'text',
+                                    child: ListTile(
+                                      leading: Icon(Icons.article_outlined),
+                                      title: Text('View extracted text'),
+                                    ),
+                                  ),
+                                const PopupMenuItem(
+                                  value: 'remove',
+                                  child: ListTile(
+                                    leading: Icon(Icons.delete_outline_rounded),
+                                    title: Text('Remove'),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         );

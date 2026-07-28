@@ -13,6 +13,13 @@ class AppSpacing {
   static const double xl = 24;
   static const double xxl = 32;
   static const double xxxl = 48;
+
+  /// Reserve this much bottom padding on any scrollable list that sits
+  /// under a Scaffold's `floatingActionButton` — a standard FAB's
+  /// footprint (56dp circle, extended FABs a bit taller, plus Material's
+  /// 16dp margin) needs more clearance than xxxl alone gives, or the
+  /// last item ends up partly hidden behind the button.
+  static const double fabClearance = 88;
 }
 
 /// Corner radius scale. Bigger radii read as "soft/modern"; keep them

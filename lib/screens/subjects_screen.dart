@@ -48,80 +48,87 @@ class SubjectsScreen extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Subjects · ${active.name}'),
-        actions: [
-          IconButton(
-            tooltip: 'Upload timetable',
-            icon: const Icon(Icons.upload_file_rounded),
-            onPressed: () => Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => TimetableUploadScreen(semesterId: active.id),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppSpacing.xxs),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () =>
-            QuickCaptureFlow.start(context, semesterId: active.id),
-        icon: const Icon(Icons.add_a_photo_outlined),
-        label: const Text('Quick Capture'),
-      ),
-      body: StreamBuilder<List<Subject>>(
-        stream: SubjectService.instance.watchForSemester(active.id),
-        builder: (context, snapshot) {
-          final subjects = snapshot.data ?? [];
+    return StreamBuilder<List<Subject>>(
+      stream: SubjectService.instance.watchForSemester(active.id),
+      builder: (context, snapshot) {
+        final subjects = snapshot.data ?? [];
 
-          if (subjects.isEmpty) {
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Expanded(
-                  child: PlaceholderView(
-                    icon: Icons.schedule_rounded,
-                    title: 'No subjects yet',
-                    subtitle:
-                        'Upload your timetable (photo or PDF) and subjects, '
-                        'teachers, and the weekly schedule will be created '
-                        'automatically.',
+        return Scaffold(
+          appBar: AppBar(
+            title: Text('Subjects · ${active.name}'),
+            actions: [
+              IconButton(
+                tooltip: 'Upload timetable',
+                icon: const Icon(Icons.upload_file_rounded),
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => TimetableUploadScreen(semesterId: active.id),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(AppSpacing.md),
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              TimetableUploadScreen(semesterId: active.id),
+              ),
+              const SizedBox(width: AppSpacing.xxs),
+            ],
+          ),
+          // Hidden while the list is empty: that state already has its
+          // own full-width "Upload Timetable" button pinned to the
+          // bottom, and showing the FAB too meant two overlapping,
+          // near-duplicate calls to action in the same corner.
+          floatingActionButton: subjects.isEmpty
+              ? null
+              : FloatingActionButton.extended(
+                  onPressed: () =>
+                      QuickCaptureFlow.start(context, semesterId: active.id),
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  label: const Text('Quick Capture'),
+                ),
+          body: subjects.isEmpty
+              ? Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Expanded(
+                      child: PlaceholderView(
+                        icon: Icons.schedule_rounded,
+                        title: 'No subjects yet',
+                        subtitle:
+                            'Upload your timetable (photo or PDF) and '
+                            'subjects, teachers, and the weekly schedule '
+                            'will be created automatically.',
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(AppSpacing.md),
+                      child: SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => TimetableUploadScreen(
+                                semesterId: active.id,
+                              ),
+                            ),
+                          ),
+                          icon: const Icon(Icons.upload_file_rounded),
+                          label: const Text('Upload Timetable'),
                         ),
                       ),
-                      icon: const Icon(Icons.upload_file_rounded),
-                      label: const Text('Upload Timetable'),
                     ),
+                  ],
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.md,
+                    AppSpacing.xs,
+                    AppSpacing.md,
+                    AppSpacing.fabClearance,
                   ),
+                  itemCount: subjects.length,
+                  separatorBuilder: (_, __) =>
+                      const SizedBox(height: AppSpacing.sm),
+                  itemBuilder: (context, i) =>
+                      _SubjectCard(subject: subjects[i]),
                 ),
-              ],
-            );
-          }
-
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.xs,
-              AppSpacing.md,
-              AppSpacing.xxxl,
-            ),
-            itemCount: subjects.length,
-            separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),
-            itemBuilder: (context, i) => _SubjectCard(subject: subjects[i]),
-          );
-        },
-      ),
+        );
+      },
     );
   }
 }

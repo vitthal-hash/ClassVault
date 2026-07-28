@@ -44,6 +44,8 @@ extension WeekdayX on Weekday {
 /// Subject workspace (Phase 4) and Lecture upload (Phase 7).
 enum SessionType { theory, lab, tutorial }
 
+
+
 extension SessionTypeX on SessionType {
   String get label {
     switch (this) {
@@ -73,6 +75,66 @@ extension SessionTypeX on SessionType {
         return 'L';
       case SessionType.tutorial:
         return 'TU';
+    }
+  }
+}
+
+enum SubjectSection {
+  theory,
+  lab,
+  tutorial,
+  resources,
+  lectures,
+  assignments,
+  syllabus,
+  notes,
+  aiChat,
+}
+
+extension SubjectSectionX on SubjectSection {
+  String get label {
+    switch (this) {
+      case SubjectSection.theory:
+        return 'Theory';
+      case SubjectSection.lab:
+        return 'Lab';
+      case SubjectSection.tutorial:
+        return 'Tutorial';
+      case SubjectSection.resources:
+        return 'Resources';
+      case SubjectSection.lectures:
+        return 'Lectures';
+      case SubjectSection.assignments:
+        return 'Assignments';
+      case SubjectSection.syllabus:
+        return 'Syllabus';
+      case SubjectSection.notes:
+        return 'Notes';
+      case SubjectSection.aiChat:
+        return 'AI Chat';
+    }
+  }
+
+  IconData get icon {
+    switch (this) {
+      case SubjectSection.theory:
+        return Icons.menu_book_rounded;
+      case SubjectSection.lab:
+        return Icons.science_rounded;
+      case SubjectSection.tutorial:
+        return Icons.school_rounded;
+      case SubjectSection.resources:
+        return Icons.folder_rounded;
+      case SubjectSection.lectures:
+        return Icons.photo_library_rounded;
+      case SubjectSection.assignments:
+        return Icons.assignment_rounded;
+      case SubjectSection.syllabus:
+        return Icons.description_rounded;
+      case SubjectSection.notes:
+        return Icons.note_alt_rounded;
+      case SubjectSection.aiChat:
+        return Icons.smart_toy_rounded;
     }
   }
 }

@@ -27,14 +27,15 @@ dependencies:
   image_picker: ^1.1.2            # camera capture, also used later in Phase 7
   google_mlkit_text_recognition: ^0.13.0   # OCR for timetable images (and Phase 9 lectures)
   syncfusion_flutter_pdf: ^26.0.0 # extract text from timetable PDFs (headless, no viewer UI)
+  syncfusion_flutter_pdfviewer: ^26.0.0 # in-app PDF viewing for Resources/Syllabus/Assignments
+  open_filex: ^4.5.0               # hand off PPT/Word files to an installed OS viewer app
+  speech_to_text: ^7.0.0           # ClassVault bot voice input
+  flutter_tts: ^4.0.0              # ClassVault bot voice output (always-on speech)
 
   # --- Phase 10: AI Features ---
   http: ^1.2.1                          # Gemini API calls (also reused by Phase 11 subject chat)
   flutter_secure_storage: ^9.2.2        # Gemini API key, kept off Isar's plaintext store
   share_plus: ^11.0.0                   # "Share" action on AI results
-
-  # === Added in LATER phases (kept here for reference, uncomment when needed) ===
-  # syncfusion_flutter_pdfviewer: ^26.0.0    # PDF viewing (Phase 6)
 
   # Phase 16 (Settings — Export/Import Database, Backup Folder, Clear
   # Cache) needed no new packages: file_picker (Phase 3), path_provider

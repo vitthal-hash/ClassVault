@@ -8,6 +8,7 @@ import 'providers/semester_provider.dart';
 import 'providers/settings_provider.dart';
 import 'screens/root_shell.dart';
 import 'utils/constants.dart';
+import 'widgets/classvault_bubble_overlay.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,6 +39,15 @@ class AcademicAssistantApp extends StatelessWidget {
           darkTheme: AppTheme.dark,
           themeMode: settings.themeMode,
           home: const RootShell(),
+          // Floats the ClassVault bubble above whatever route is
+          // currently showing — main tabs or any pushed screen alike —
+          // rather than wiring it into every screen individually.
+          builder: (context, child) => Stack(
+            children: [
+              if (child != null) child,
+              const ClassVaultBubbleOverlay(),
+            ],
+          ),
         ),
       ),
     );

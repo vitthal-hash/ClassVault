@@ -12,6 +12,7 @@ import '../widgets/note_editor_sheet.dart';
 import '../widgets/placeholder_view.dart';
 import 'lecture_detail_screen.dart';
 import 'subject_workspace_screen.dart';
+import '../core/models/enums.dart';
 
 /// Global Search (Phase 12): "Normalization -> shows Lecture, PDF, PPT,
 /// Assignment, Syllabus. No filename searching." One search box across

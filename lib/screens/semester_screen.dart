@@ -35,7 +35,7 @@ class SemesterScreen extends StatelessWidget {
                 AppSpacing.md,
                 AppSpacing.xs,
                 AppSpacing.md,
-                AppSpacing.xxxl,
+                AppSpacing.fabClearance,
               ),
               itemCount: semesters.length,
               separatorBuilder: (_, __) => const SizedBox(height: AppSpacing.sm),

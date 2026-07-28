@@ -45,6 +45,12 @@ class RootShell extends StatelessWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: nav.index,
         onDestinationSelected: context.read<NavProvider>().setIndex,
+        // 6 destinations is one past Material 3's comfortable limit for
+        // always-on labels — "Semester", "AI Chat", and "Settings" were
+        // wrapping/clipping on standard phone widths, made worse by the
+        // selected label going bold (wider). Showing only the selected
+        // label keeps every icon comfortably spaced.
+        labelBehavior: NavigationDestinationLabelBehavior.onlyShowSelected,
         destinations: _destinations,
       ),
     );

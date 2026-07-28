@@ -5,6 +5,7 @@ import '../../core/models/enums.dart';
 import '../../core/models/subject.dart';
 import '../../core/services/assignment_service.dart';
 import '../../utils/date_utils.dart';
+import '../../utils/file_opener.dart';
 import '../../widgets/create_assignment_sheet.dart';
 import '../../widgets/placeholder_view.dart';
 
@@ -132,6 +133,11 @@ class _AssignmentCard extends StatelessWidget {
         ),
         title: Text(assignment.title),
         subtitle: Text('Due ${AppDateUtils.short(assignment.deadline)}'),
+        onTap: () => openStoredFile(
+          context,
+          path: assignment.filePath,
+          title: assignment.title,
+        ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
