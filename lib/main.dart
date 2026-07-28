@@ -10,6 +10,11 @@ import 'screens/root_shell.dart';
 import 'utils/constants.dart';
 import 'widgets/classvault_bubble_overlay.dart';
 
+// Handle to the app's real Navigator, reachable from anywhere — including
+// widgets like ClassVaultBubbleOverlay that live outside the Navigator's
+// own subtree (see the builder below) and so can't use Navigator.of(context).
+final navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -33,6 +38,7 @@ class AcademicAssistantApp extends StatelessWidget {
       ],
       child: Consumer<SettingsProvider>(
         builder: (context, settings, _) => MaterialApp(
+          navigatorKey: navigatorKey,
           title: AppConstants.appName,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
