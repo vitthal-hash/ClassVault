@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/models/note.dart';
 import '../core/services/note_service.dart';
+import '../core/services/timetable_service.dart';
 
 /// Add/edit sheet for a quick, free-form [Note]. Used two ways:
 /// - `NoteEditorSheet.showNew(context, subjectId: ...)` from the
@@ -40,6 +41,12 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
   late final TextEditingController _titleController;
   late final TextEditingController _bodyController;
   bool _saving = false;
+  late bool _remindMe;
+
+  /// Null while checking; true/false once we know whether this subject
+  /// has any timetable slots at all. The toggle is meaningless without
+  /// one, so it stays disabled with an explanatory hint until then.
+  bool? _hasTimetable;
 
   bool get _isEditing => widget.note != null;
 
@@ -48,6 +55,13 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
     super.initState();
     _titleController = TextEditingController(text: widget.note?.title ?? '');
     _bodyController = TextEditingController(text: widget.note?.body ?? '');
+    _remindMe = widget.note?.remindMe ?? false;
+    _checkTimetable();
+  }
+
+  Future<void> _checkTimetable() async {
+    final entries = await TimetableService.instance.getForSubject(widget.subjectId);
+    if (mounted) setState(() => _hasTimetable = entries.isNotEmpty);
   }
 
   Future<void> _save() async {
@@ -66,12 +80,14 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
           widget.note!,
           title: _titleController.text,
           body: body,
+          remindMe: _remindMe,
         );
       } else {
         await NoteService.instance.create(
           subjectId: widget.subjectId,
           title: _titleController.text,
           body: body,
+          remindMe: _remindMe,
         );
       }
       if (mounted) Navigator.of(context).pop();
@@ -169,7 +185,24 @@ class _NoteEditorSheetState extends State<NoteEditorSheet> {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: 20),
+          const SizedBox(height: 14),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            value: _remindMe,
+            onChanged: (_hasTimetable ?? false)
+                ? (value) => setState(() => _remindMe = value)
+                : null,
+            title: const Text('Remind me'),
+            subtitle: Text(
+              _hasTimetable == null
+                  ? 'Checking timetable…'
+                  : _hasTimetable!
+                      ? "Nudge the evening before this subject's next lecture"
+                      : 'Add this subject to your timetable first',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          ),
+          const SizedBox(height: 6),
           ElevatedButton(
             onPressed: _saving ? null : _save,
             child: _saving

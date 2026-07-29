@@ -37,33 +37,45 @@ class _CreateAssignmentSheetState extends State<CreateAssignmentSheet> {
     super.dispose();
   }
 
-  Future<void> _pickPdf() async {
+  Future<void> _pickFile() async {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
-      allowedExtensions: ['pdf'],
+      allowedExtensions: ['pdf', 'doc', 'docx'],
     );
     final path = result?.files.single.path;
     if (path == null) return;
     setState(() {
       _pickedFile = File(path);
       _pickedFileName = path.split('/').last;
-      // Default the title to the file name if the person hasn't typed one.
+      // Default the title to the file name (minus its extension) if the
+      // person hasn't typed one — works for any extension, not just PDF.
       if (_titleController.text.trim().isEmpty) {
-        _titleController.text = _pickedFileName!.replaceAll('.pdf', '');
+        final dot = _pickedFileName!.lastIndexOf('.');
+        _titleController.text =
+            dot > 0 ? _pickedFileName!.substring(0, dot) : _pickedFileName!;
       }
     });
   }
 
+  IconData get _pickedFileIcon {
+    if (_pickedFileName == null) return Icons.attach_file_rounded;
+    final ext = _pickedFileName!.split('.').last.toLowerCase();
+    if (ext == 'doc' || ext == 'docx') return Icons.description_rounded;
+    return Icons.picture_as_pdf_rounded;
+  }
+
   Future<void> _submit() async {
-    if (_pickedFile == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Choose a PDF first')),
-      );
-      return;
-    }
     if (_deadline == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Pick a deadline')),
+      );
+      return;
+    }
+    if (_pickedFile == null && _titleController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Give it a title, or attach a file to name it after"),
+        ),
       );
       return;
     }
@@ -74,7 +86,7 @@ class _CreateAssignmentSheetState extends State<CreateAssignmentSheet> {
         subject: widget.subject,
         title: _titleController.text,
         deadline: _deadline!,
-        pdfFile: _pickedFile!,
+        file: _pickedFile,
       );
       if (mounted) Navigator.of(context).pop();
     } catch (e) {
@@ -109,15 +121,38 @@ class _CreateAssignmentSheetState extends State<CreateAssignmentSheet> {
                 ?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 18),
-          OutlinedButton.icon(
-            onPressed: _pickPdf,
-            icon: const Icon(Icons.picture_as_pdf_rounded),
-            label: Text(_pickedFileName ?? 'Choose PDF'),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _pickFile,
+                  icon: Icon(_pickedFileIcon),
+                  label: Text(
+                    _pickedFileName ?? 'Attach a file (optional)',
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              if (_pickedFile != null)
+                IconButton(
+                  tooltip: 'Remove attachment',
+                  icon: const Icon(Icons.close_rounded),
+                  onPressed: () => setState(() {
+                    _pickedFile = null;
+                    _pickedFileName = null;
+                  }),
+                ),
+            ],
           ),
           const SizedBox(height: 14),
           TextField(
             controller: _titleController,
-            decoration: const InputDecoration(labelText: 'Title'),
+            decoration: const InputDecoration(
+              labelText: 'Title',
+              helperText:
+                  'Required if you skip the attachment — otherwise the '
+                  'file name is used.',
+            ),
           ),
           const SizedBox(height: 14),
           DateField(

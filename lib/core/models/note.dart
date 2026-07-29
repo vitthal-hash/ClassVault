@@ -25,4 +25,10 @@ class Note {
 
   @Index()
   DateTime updatedAt = DateTime.now();
+
+  /// Phase 17 (Reminders): when on, ReminderService schedules a
+  /// recurring notification the evening before every occurrence of
+  /// this note's subject on the timetable. Off by default — most notes
+  /// are just free-form scratch, not something worth a nudge for.
+  bool remindMe = false;
 }

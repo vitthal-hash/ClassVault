@@ -27,18 +27,23 @@ const NoteSchema = CollectionSchema(
       name: r'createdAt',
       type: IsarType.dateTime,
     ),
-    r'subjectId': PropertySchema(
+    r'remindMe': PropertySchema(
       id: 2,
+      name: r'remindMe',
+      type: IsarType.bool,
+    ),
+    r'subjectId': PropertySchema(
+      id: 3,
       name: r'subjectId',
       type: IsarType.long,
     ),
     r'title': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'title',
       type: IsarType.string,
     ),
     r'updatedAt': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'updatedAt',
       type: IsarType.dateTime,
     )
@@ -108,9 +113,10 @@ void _noteSerialize(
 ) {
   writer.writeString(offsets[0], object.body);
   writer.writeDateTime(offsets[1], object.createdAt);
-  writer.writeLong(offsets[2], object.subjectId);
-  writer.writeString(offsets[3], object.title);
-  writer.writeDateTime(offsets[4], object.updatedAt);
+  writer.writeBool(offsets[2], object.remindMe);
+  writer.writeLong(offsets[3], object.subjectId);
+  writer.writeString(offsets[4], object.title);
+  writer.writeDateTime(offsets[5], object.updatedAt);
 }
 
 Note _noteDeserialize(
@@ -123,9 +129,10 @@ Note _noteDeserialize(
   object.body = reader.readString(offsets[0]);
   object.createdAt = reader.readDateTime(offsets[1]);
   object.id = id;
-  object.subjectId = reader.readLong(offsets[2]);
-  object.title = reader.readStringOrNull(offsets[3]);
-  object.updatedAt = reader.readDateTime(offsets[4]);
+  object.remindMe = reader.readBool(offsets[2]);
+  object.subjectId = reader.readLong(offsets[3]);
+  object.title = reader.readStringOrNull(offsets[4]);
+  object.updatedAt = reader.readDateTime(offsets[5]);
   return object;
 }
 
@@ -141,10 +148,12 @@ P _noteDeserializeProp<P>(
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readLong(offset)) as P;
+      return (reader.readBool(offset)) as P;
     case 3:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 4:
+      return (reader.readStringOrNull(offset)) as P;
+    case 5:
       return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -667,6 +676,15 @@ extension NoteQueryFilter on QueryBuilder<Note, Note, QFilterCondition> {
     });
   }
 
+  QueryBuilder<Note, Note, QAfterFilterCondition> remindMeEqualTo(bool value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'remindMe',
+        value: value,
+      ));
+    });
+  }
+
   QueryBuilder<Note, Note, QAfterFilterCondition> subjectIdEqualTo(int value) {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(FilterCondition.equalTo(
@@ -946,6 +964,18 @@ extension NoteQuerySortBy on QueryBuilder<Note, Note, QSortBy> {
     });
   }
 
+  QueryBuilder<Note, Note, QAfterSortBy> sortByRemindMe() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remindMe', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterSortBy> sortByRemindMeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remindMe', Sort.desc);
+    });
+  }
+
   QueryBuilder<Note, Note, QAfterSortBy> sortBySubjectId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'subjectId', Sort.asc);
@@ -1020,6 +1050,18 @@ extension NoteQuerySortThenBy on QueryBuilder<Note, Note, QSortThenBy> {
     });
   }
 
+  QueryBuilder<Note, Note, QAfterSortBy> thenByRemindMe() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remindMe', Sort.asc);
+    });
+  }
+
+  QueryBuilder<Note, Note, QAfterSortBy> thenByRemindMeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'remindMe', Sort.desc);
+    });
+  }
+
   QueryBuilder<Note, Note, QAfterSortBy> thenBySubjectId() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'subjectId', Sort.asc);
@@ -1071,6 +1113,12 @@ extension NoteQueryWhereDistinct on QueryBuilder<Note, Note, QDistinct> {
     });
   }
 
+  QueryBuilder<Note, Note, QDistinct> distinctByRemindMe() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'remindMe');
+    });
+  }
+
   QueryBuilder<Note, Note, QDistinct> distinctBySubjectId() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'subjectId');
@@ -1107,6 +1155,12 @@ extension NoteQueryProperty on QueryBuilder<Note, Note, QQueryProperty> {
   QueryBuilder<Note, DateTime, QQueryOperations> createdAtProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'createdAt');
+    });
+  }
+
+  QueryBuilder<Note, bool, QQueryOperations> remindMeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'remindMe');
     });
   }
 

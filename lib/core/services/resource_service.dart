@@ -66,6 +66,15 @@ class ResourceService {
         text = await TextExtractionService.instance.extractFromPdf(File(storedPath));
       } else if (type == ResourceType.image) {
         text = await TextExtractionService.instance.extractFromImage(File(storedPath));
+      } else if (type == ResourceType.word) {
+        // Only modern .docx (a zip) is supported — legacy binary .doc
+        // returns null here and is stored with no extractedText, same
+        // as any other resource type extraction can't handle.
+        text = await TextExtractionService.instance.extractFromDocx(File(storedPath));
+      } else if (type == ResourceType.ppt) {
+        // Same story as .doc above: legacy binary .ppt isn't a zip and
+        // comes back null; .pptx works.
+        text = await TextExtractionService.instance.extractFromPptx(File(storedPath));
       }
 
       final resource = Resource()

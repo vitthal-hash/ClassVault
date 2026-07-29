@@ -106,11 +106,23 @@ class _AssignmentCard extends StatelessWidget {
   final VoidCallback onToggleStatus;
   final VoidCallback onDelete;
 
+  /// Mirrors the icon logic in CreateAssignmentSheet — Word files get a
+  /// document icon, PDF keeps its own, and a deadline-only assignment
+  /// with nothing attached gets a plain assignment icon rather than
+  /// implying there's a file to open.
+  IconData _iconForFile(String? fileName) {
+    if (fileName == null) return Icons.assignment_outlined;
+    final ext = fileName.split('.').last.toLowerCase();
+    if (ext == 'doc' || ext == 'docx') return Icons.description_outlined;
+    return Icons.picture_as_pdf_outlined;
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isSubmitted = assignment.status == AssignmentStatus.submitted;
     final isOverdue = assignment.isOverdue;
+    final filePath = assignment.filePath;
 
     final Color chipColor;
     final String chipLabel;
@@ -129,15 +141,22 @@ class _AssignmentCard extends StatelessWidget {
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: theme.colorScheme.primaryContainer,
-          child: const Icon(Icons.picture_as_pdf_outlined),
+          child: Icon(_iconForFile(assignment.fileName)),
         ),
         title: Text(assignment.title),
-        subtitle: Text('Due ${AppDateUtils.short(assignment.deadline)}'),
-        onTap: () => openStoredFile(
-          context,
-          path: assignment.filePath,
-          title: assignment.title,
+        subtitle: Text(
+          'Due ${AppDateUtils.short(assignment.deadline)}'
+          '${filePath == null ? ' · no file attached' : ''}',
         ),
+        // No file to open for a deadline-only assignment — leave the
+        // tile inert rather than opening nothing / erroring.
+        onTap: filePath == null
+            ? null
+            : () => openStoredFile(
+                  context,
+                  path: filePath,
+                  title: assignment.title,
+                ),
         trailing: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

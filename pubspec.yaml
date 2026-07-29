@@ -41,6 +41,22 @@ dependencies:
   # Cache) needed no new packages: file_picker (Phase 3), path_provider
   # (Phase 1), and share_plus (Phase 10) already covered all of it.
 
+  # Phase 17 (Reminders) — local, on-device notifications for Notes
+  # ("remind me before next lecture") and Assignments (day-before /
+  # due-date / snooze). No backend, so no push/FCM needed.
+  flutter_local_notifications: ^18.0.1
+  timezone: ^0.9.4            # TZDateTime for zonedSchedule
+  flutter_timezone: ^3.0.1    # reads the device's IANA timezone name
+
+  # PPT/Word text extraction for Resources + AI chat context. .docx and
+  # .pptx are both just zip archives of XML under the hood, so rather
+  # than pull in a heavyweight/native Office SDK, TextExtractionService
+  # unzips them with `archive` and reads the text runs out of the XML
+  # with `xml` — same trick Syncfusion's own DOCX/PPTX readers use
+  # internally, just without needing that whole dependency.
+  archive: ^3.6.1
+  xml: ^6.5.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

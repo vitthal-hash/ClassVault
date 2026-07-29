@@ -12,10 +12,10 @@ import '../../utils/file_opener.dart';
 import '../../widgets/placeholder_view.dart';
 
 /// Resource Manager tab (Phase 6): upload any mix of PDF/PPT/Word/Image
-/// files into this subject. PDF and Image get their text extracted
-/// automatically on upload; PPT/Word are stored as-is until a text
-/// extractor for them is built in a later phase (per the plan's own
-/// "PPT Text Extractor (later)" note).
+/// files into this subject. All four get their text extracted
+/// automatically on upload where possible — PPT/Word extraction
+/// (Phase 17) only covers the modern .pptx/.docx zip-based formats;
+/// a legacy binary .ppt/.doc still gets stored with no extracted text.
 class ResourcesTab extends StatefulWidget {
   const ResourcesTab({super.key, required this.subject});
 
@@ -172,8 +172,8 @@ class _ResourcesTabState extends State<ResourcesTab> {
                       title: 'No resources yet',
                       subtitle:
                           'Upload PDFs, PPTs, Word docs, or images for '
-                          'this subject. PDFs and images get their text '
-                          'extracted automatically.',
+                          'this subject — their text gets extracted '
+                          'automatically so AI Chat can use them.',
                     )
                   : ListView.separated(
                       padding: const EdgeInsets.all(16),

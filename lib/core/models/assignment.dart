@@ -4,10 +4,11 @@ import 'enums.dart';
 
 part 'assignment.g.dart';
 
-/// One assignment inside a subject's Assignment Manager (Phase 14):
-/// an uploaded PDF, a deadline, and a Pending/Submitted status. Like
-/// Resource, only metadata + path lives in Isar — the PDF bytes stay
-/// on disk under `Subject/Assignments/`.
+/// One assignment inside a subject's Assignment Manager (Phase 14): a
+/// title, a deadline, a Pending/Submitted status, and an *optional*
+/// attached file (PDF or Word). Like Resource, only metadata + path
+/// lives in Isar — file bytes stay on disk under `Subject/Assignments/`
+/// when there is a file at all.
 @collection
 class Assignment {
   Id id = Isar.autoIncrement;
@@ -17,8 +18,12 @@ class Assignment {
 
   late String title;
 
-  late String fileName;
-  late String filePath;
+  /// Both null for a deadline-only entry with no file attached — the
+  /// "don't make the upload compulsory" change. A Pending/Submitted
+  /// assignment can exist purely as a reminder of something to do by a
+  /// date, same as it always could when it did have a file.
+  String? fileName;
+  String? filePath;
 
   @Index()
   late DateTime deadline;

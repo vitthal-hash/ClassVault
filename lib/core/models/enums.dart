@@ -289,9 +289,12 @@ extension AssignmentStatusX on AssignmentStatus {
   }
 }
 
-/// A file uploaded through the Resource Manager (Phase 6). PPT/Word have
-/// no text extractor yet (the plan calls this out as "later"), so only
-/// pdf/image resources get `extractedText` populated for now.
+/// A file uploaded through the Resource Manager (Phase 6). Every type
+/// now gets `extractedText` populated where possible: pdf/image via
+/// OCR/PdfTextExtractor, and ppt/word (.pptx/.docx only — both are zip
+/// archives of XML) via TextExtractionService's own unzip-and-parse
+/// extractor added in Phase 17. Legacy binary .doc/.ppt still come back
+/// with no extractedText — see TextExtractionService for why.
 enum ResourceType { pdf, ppt, word, image }
 
 extension ResourceTypeX on ResourceType {
@@ -323,8 +326,11 @@ extension ResourceTypeX on ResourceType {
   }
 
   /// Whether this type currently supports automatic text extraction.
-  bool get supportsExtraction =>
-      this == ResourceType.pdf || this == ResourceType.image;
+  /// True for all four now — ppt/word only actually succeed for the
+  /// modern .pptx/.docx zip-based format though; a legacy binary
+  /// .ppt/.doc upload will still end up with no extractedText even
+  /// though the type itself is "supported".
+  bool get supportsExtraction => true;
 
   /// Detects the type from a file's extension. Returns null for
   /// anything outside PDF/PPT/Word/Image — the upload flow skips those.

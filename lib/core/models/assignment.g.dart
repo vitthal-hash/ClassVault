@@ -101,8 +101,18 @@ int _assignmentEstimateSize(
   Map<Type, List<int>> allOffsets,
 ) {
   var bytesCount = offsets.last;
-  bytesCount += 3 + object.fileName.length * 3;
-  bytesCount += 3 + object.filePath.length * 3;
+  {
+    final value = object.fileName;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
+  {
+    final value = object.filePath;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.title.length * 3;
   return bytesCount;
 }
@@ -131,8 +141,8 @@ Assignment _assignmentDeserialize(
   final object = Assignment();
   object.createdAt = reader.readDateTime(offsets[0]);
   object.deadline = reader.readDateTime(offsets[1]);
-  object.fileName = reader.readString(offsets[2]);
-  object.filePath = reader.readString(offsets[3]);
+  object.fileName = reader.readStringOrNull(offsets[2]);
+  object.filePath = reader.readStringOrNull(offsets[3]);
   object.id = id;
   object.status =
       _AssignmentstatusValueEnumMap[reader.readByteOrNull(offsets[4])] ??
@@ -154,9 +164,9 @@ P _assignmentDeserializeProp<P>(
     case 1:
       return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 3:
-      return (reader.readString(offset)) as P;
+      return (reader.readStringOrNull(offset)) as P;
     case 4:
       return (_AssignmentstatusValueEnumMap[reader.readByteOrNull(offset)] ??
           AssignmentStatus.pending) as P;
@@ -1393,13 +1403,13 @@ extension AssignmentQueryProperty
     });
   }
 
-  QueryBuilder<Assignment, String, QQueryOperations> fileNameProperty() {
+  QueryBuilder<Assignment, String?, QQueryOperations> fileNameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'fileName');
     });
   }
 
-  QueryBuilder<Assignment, String, QQueryOperations> filePathProperty() {
+  QueryBuilder<Assignment, String?, QQueryOperations> filePathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'filePath');
     });

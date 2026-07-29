@@ -4,6 +4,7 @@ import '../database/isar_service.dart';
 import '../models/enums.dart';
 import '../models/timetable_entry.dart';
 import '../parsing/timetable_parser.dart';
+import 'reminder_service.dart';
 import 'subject_service.dart';
 import 'teacher_service.dart';
 
@@ -22,6 +23,7 @@ class TimetableService {
     required int semesterId,
   }) async {
     var created = 0;
+    final touchedSubjectIds = <int>{};
 
     for (final row in rows) {
       if (!row.isComplete) continue;
@@ -51,6 +53,14 @@ class TimetableService {
         await _db.timetableEntrys.put(entry);
       });
       created++;
+      touchedSubjectIds.add(subject.id);
+    }
+
+    // One resync per subject rather than per row — a freshly-uploaded
+    // timetable can add several slots for the same subject, and each
+    // remind-me'd note only needs recomputing once.
+    for (final subjectId in touchedSubjectIds) {
+      await ReminderService.instance.rescheduleNoteRemindersForSubject(subjectId);
     }
 
     return created;
@@ -83,6 +93,14 @@ class TimetableService {
             if (dayCompare != 0) return dayCompare;
             return a.startMinutes.compareTo(b.startMinutes);
           }));
+  }
+
+  /// One-shot version of [watchForSubject] — used by ReminderService
+  /// (Phase 17), which schedules notifications once when a note's
+  /// "remind me" toggle changes rather than staying subscribed to a
+  /// stream for the lifetime of the app.
+  Future<List<TimetableEntry>> getForSubject(int subjectId) {
+    return _db.timetableEntrys.filter().subjectIdEqualTo(subjectId).findAll();
   }
 
   /// Used by Phase 8 (Smart Subject Detection): "what subject/session is
@@ -145,6 +163,7 @@ class TimetableService {
     await _db.writeTxn(() async {
       await _db.timetableEntrys.put(entry);
     });
+    await ReminderService.instance.rescheduleNoteRemindersForSubject(entry.subjectId);
   }
 
   /// Manually adds a slot outside the timetable-upload flow — e.g. a
@@ -172,12 +191,15 @@ class TimetableService {
     await _db.writeTxn(() async {
       await _db.timetableEntrys.put(entry);
     });
+    await ReminderService.instance.rescheduleNoteRemindersForSubject(subjectId);
     return entry;
   }
 
   Future<void> delete(TimetableEntry entry) async {
+    final subjectId = entry.subjectId;
     await _db.writeTxn(() async {
       await _db.timetableEntrys.delete(entry.id);
     });
+    await ReminderService.instance.rescheduleNoteRemindersForSubject(subjectId);
   }
 }

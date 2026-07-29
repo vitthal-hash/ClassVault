@@ -55,6 +55,13 @@ class NotesTab extends StatelessWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                trailing: note.remindMe
+                    ? Icon(
+                        Icons.notifications_active_outlined,
+                        size: 20,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
+                    : null,
                 onTap: () => NoteEditorSheet.showEdit(context, note: note),
               ),
             );
