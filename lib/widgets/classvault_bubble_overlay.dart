@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../main.dart' show navigatorKey;
 import '../screens/classvault_bot_screen.dart';
 
 /// Wraps the whole app (via `MaterialApp.builder`) so this floats over
@@ -42,7 +43,12 @@ class _ClassVaultBubbleOverlayState extends State<ClassVaultBubbleOverlay> {
   double _dragDistance = 0;
 
   void _openBot(BuildContext context) {
-    Navigator.of(context, rootNavigator: true).push(
+    // This widget lives in MaterialApp.builder, above the app's real
+    // Navigator, so `Navigator.of(context)` can't find one — hence the
+    // "context that does not include a Navigator" exception. Go through
+    // the app-level navigatorKey instead, which points at the actual
+    // Navigator regardless of where this widget sits in the tree.
+    navigatorKey.currentState?.push(
       MaterialPageRoute(builder: (_) => const ClassVaultBotScreen()),
     );
   }

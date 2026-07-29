@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_tts/flutter_tts.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../../core/models/chat_message.dart';
 import '../../core/models/enums.dart';
@@ -31,10 +33,81 @@ class AiChatTab extends StatefulWidget {
 class _AiChatTabState extends State<AiChatTab> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
+  final _speech = stt.SpeechToText();
+  final _tts = FlutterTts();
 
   bool _sending = false;
+  bool _listening = false;
+  bool _speechAvailable = false;
+  bool _speaking = false;
   String? _error;
   bool _errorIsKeyMissing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initVoice();
+  }
+
+  Future<void> _initVoice() async {
+    final available = await _speech.initialize(
+      onStatus: (status) {
+        if (status == 'done' || status == 'notListening') {
+          if (mounted) setState(() => _listening = false);
+        }
+      },
+      onError: (_) {
+        if (mounted) setState(() => _listening = false);
+      },
+    );
+    await _tts.setLanguage('en-US');
+    await _tts.setSpeechRate(0.48);
+    _tts.setStartHandler(() {
+      if (mounted) setState(() => _speaking = true);
+    });
+    _tts.setCompletionHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+    _tts.setCancelHandler(() {
+      if (mounted) setState(() => _speaking = false);
+    });
+    if (mounted) setState(() => _speechAvailable = available);
+  }
+
+  Future<void> _toggleListening() async {
+    if (!_speechAvailable) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Voice input isn\'t available — check the microphone '
+            'permission for ClassVault in your device settings.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (_listening) {
+      await _speech.stop();
+      setState(() => _listening = false);
+      return;
+    }
+
+    // Same pattern as the global assistant bubble: send automatically
+    // once recognition finishes, rather than only filling the field.
+    setState(() => _listening = true);
+    await _speech.listen(
+      onResult: (result) {
+        _controller.text = result.recognizedWords;
+        _controller.selection = TextSelection.collapsed(
+          offset: _controller.text.length,
+        );
+        if (result.finalResult && result.recognizedWords.trim().isNotEmpty) {
+          _send();
+        }
+      },
+    );
+  }
 
   Future<void> _send() async {
     final text = _controller.text.trim();
@@ -48,11 +121,47 @@ class _AiChatTabState extends State<AiChatTab> {
     });
 
     try {
-      await ChatService.instance.sendMessage(
+      final answer = await ChatService.instance.sendMessage(
         subject: widget.subject,
         question: text,
       );
       _scrollToBottom();
+      await _tts.stop();
+      if (answer.isNotEmpty) await _tts.speak(answer);
+    } on GeminiApiKeyMissingException {
+      if (mounted) {
+        setState(() {
+          _errorIsKeyMissing = true;
+          _error = 'No Gemini API key set yet. Add one in Settings to '
+              'start chatting.';
+        });
+      }
+    } catch (e) {
+      if (mounted) setState(() => _error = e.toString());
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  /// Runs a whole-subject quick action (see `ChatService.runSubjectAction`)
+  /// — same loading/error handling as [_send], just a different call.
+  Future<void> _runAction(AiAction action) async {
+    if (_sending) return;
+
+    setState(() {
+      _sending = true;
+      _error = null;
+      _errorIsKeyMissing = false;
+    });
+
+    try {
+      final answer = await ChatService.instance.runSubjectAction(
+        subject: widget.subject,
+        action: action,
+      );
+      _scrollToBottom();
+      await _tts.stop();
+      if (answer.isNotEmpty) await _tts.speak(answer);
     } on GeminiApiKeyMissingException {
       if (mounted) {
         setState(() {
@@ -110,6 +219,8 @@ class _AiChatTabState extends State<AiChatTab> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _speech.stop();
+    _tts.stop();
     super.dispose();
   }
 
@@ -123,6 +234,7 @@ class _AiChatTabState extends State<AiChatTab> {
         return Column(
           children: [
             Expanded(child: _buildMessageArea(messages)),
+            _buildQuickActions(),
             if (_sending)
               const Padding(
                 padding: EdgeInsets.only(bottom: 8),
@@ -143,6 +255,30 @@ class _AiChatTabState extends State<AiChatTab> {
     );
   }
 
+  /// Horizontal row of the five whole-subject actions (see
+  /// `ChatService.runSubjectAction`) — "Summarize everything uploaded
+  /// for DBMS", etc., as opposed to typing a question.
+  Widget _buildQuickActions() {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        itemCount: AiAction.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final action = AiAction.values[i];
+          return ActionChip(
+            avatar: Icon(action.icon, size: 16, color: theme.colorScheme.primary),
+            label: Text(action.label),
+            onPressed: _sending ? null : () => _runAction(action),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildMessageArea(List<ChatMessage> messages) {
     if (messages.isEmpty) {
       return PlaceholderView(
@@ -150,8 +286,10 @@ class _AiChatTabState extends State<AiChatTab> {
         title: 'Chat with ${widget.subject.name}',
         subtitle:
             'Ask about anything from this subject\'s lectures, '
-            'resources, or syllabus — Gemini answers using what '
-            'you\'ve uploaded here.',
+            'resources, syllabus, or notes — by typing or by tapping '
+            'the mic — and I\'ll answer using what you\'ve uploaded '
+            'here, out loud too. Or tap a chip below to summarize, '
+            'explain, or generate notes from everything at once.',
       );
     }
     return ListView.builder(
@@ -182,6 +320,20 @@ class _AiChatTabState extends State<AiChatTab> {
                 icon: const Icon(Icons.delete_outline_rounded),
                 onPressed: hasHistory ? _confirmClear : null,
               ),
+              if (_speaking)
+                IconButton(
+                  tooltip: 'Stop speaking',
+                  icon: const Icon(Icons.volume_off_rounded),
+                  onPressed: () => _tts.stop(),
+                ),
+              IconButton(
+                tooltip: _listening ? 'Stop listening' : 'Ask by voice',
+                icon: Icon(
+                  _listening ? Icons.mic_rounded : Icons.mic_none_rounded,
+                  color: _listening ? theme.colorScheme.error : null,
+                ),
+                onPressed: _toggleListening,
+              ),
               Expanded(
                 child: TextField(
                   controller: _controller,
@@ -190,7 +342,8 @@ class _AiChatTabState extends State<AiChatTab> {
                   textInputAction: TextInputAction.send,
                   onSubmitted: (_) => _send(),
                   decoration: InputDecoration(
-                    hintText: 'Ask about ${widget.subject.name}…',
+                    hintText:
+                        _listening ? 'Listening…' : 'Ask about ${widget.subject.name}…',
                     filled: true,
                     fillColor: theme.colorScheme.surface,
                     border: OutlineInputBorder(

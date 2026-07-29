@@ -35,17 +35,18 @@ class ChatService {
 
   /// Sends [question] for [subject]: stores the user's turn right
   /// away, asks Gemini with the subject's full context + recent
-  /// history in front of it, then stores the reply. Rethrows on
-  /// failure (same [GeminiApiKeyMissingException] /
-  /// [GeminiApiException] pair Phase 10 uses) after the user's message
-  /// is already saved, so the question stays visible in the thread and
-  /// the screen can offer to retry without retyping it.
-  Future<void> sendMessage({
+  /// history in front of it, then stores the reply and returns its
+  /// text (so the screen can speak it). Rethrows on failure (same
+  /// [GeminiApiKeyMissingException] / [GeminiApiException] pair Phase
+  /// 10 uses) after the user's message is already saved, so the
+  /// question stays visible in the thread and the screen can offer to
+  /// retry without retyping it.
+  Future<String> sendMessage({
     required Subject subject,
     required String question,
   }) async {
     final trimmed = question.trim();
-    if (trimmed.isEmpty) return;
+    if (trimmed.isEmpty) return '';
 
     await _addMessage(subjectId: subject.id, role: ChatRole.user, content: trimmed);
 
@@ -67,6 +68,57 @@ class ChatService {
       role: ChatRole.assistant,
       content: answer,
     );
+    return answer;
+  }
+
+  /// Runs one of the five [AiAction]s (Explain/Summarize/Key Points/
+  /// Important Questions/Generate Notes) against EVERYTHING uploaded
+  /// so far for [subject] — lectures, resources, syllabus, and notes —
+  /// rather than a single lecture's OCR text the way the per-lecture
+  /// actions elsewhere in the app do. Logged into the same chat thread
+  /// as a normal turn, so it stays visible and part of the
+  /// conversation history for follow-up questions. Returns the reply
+  /// text so the screen can speak it.
+  Future<String> runSubjectAction({
+    required Subject subject,
+    required AiAction action,
+  }) async {
+    await _addMessage(
+      subjectId: subject.id,
+      role: ChatRole.user,
+      content: '${action.label} — using everything uploaded for '
+          '${subject.name} so far.',
+    );
+
+    final context = await ChatContextService.instance.buildContext(subject);
+    if (context.isEmpty) {
+      const reply = 'Nothing\'s been uploaded for this subject yet — add '
+          'a lecture, resource, syllabus, or note first and I can work '
+          'from that.';
+      await _addMessage(
+        subjectId: subject.id,
+        role: ChatRole.assistant,
+        content: reply,
+      );
+      return reply;
+    }
+
+    final prompt = '${action.promptInstruction}\n\n'
+        'Base this on everything uploaded so far for "${subject.name}" — '
+        'lectures, resources, the syllabus, and notes — not just one '
+        'item, and pull together material from across all of them where '
+        'relevant. Write it the way you\'d say it out loud: no markdown, '
+        'no bullet or numbered lists, no headers or asterisks — plain '
+        'spoken sentences, since this may be read aloud.\n\n'
+        '--- ${subject.name} material ---\n$context\n--- end of material ---';
+
+    final answer = await GeminiService.instance.generateRaw(prompt);
+    await _addMessage(
+      subjectId: subject.id,
+      role: ChatRole.assistant,
+      content: answer,
+    );
+    return answer;
   }
 
   String _buildPrompt({
@@ -80,7 +132,10 @@ class ChatService {
         '"$subjectName" course. Answer using the subject material below '
         'when it\'s relevant; if the material doesn\'t cover the '
         'question, say so and answer from general knowledge instead. '
-        'Keep answers clear and student-friendly.',
+        'Keep answers clear, student-friendly, and reasonably concise. '
+        'Your replies may be read aloud by text-to-speech, so write the '
+        'way you\'d actually talk: no markdown, no bullet or numbered '
+        'lists, no headers, and no asterisks used for emphasis.',
       );
 
     if (context.isEmpty) {

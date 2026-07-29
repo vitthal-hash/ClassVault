@@ -1,9 +1,14 @@
+import 'dart:convert';
+
 import 'package:isar/isar.dart';
 
 import '../database/isar_service.dart';
+import '../models/assistant_action.dart';
 import '../models/chat_message.dart';
 import '../models/enums.dart';
 import 'gemini_service.dart';
+import 'semester_service.dart';
+import 'subject_service.dart';
 
 /// Sentinel `subjectId` reserved for the global ClassVault bot's thread.
 /// [ChatMessage] is otherwise always scoped to one real subject; real
@@ -12,6 +17,16 @@ import 'gemini_service.dart';
 /// than adding a new Isar `@collection`) avoids a schema migration for
 /// what is, structurally, the exact same "who said what, when" shape.
 const int kGlobalAssistantSubjectId = -1;
+
+/// What one turn with the global assistant produced: the spoken/shown
+/// [text] plus whatever [action] (possibly [AssistantAction.none]) it
+/// decided to take in the app itself.
+class AssistantReply {
+  const AssistantReply({required this.text, required this.action});
+
+  final String text;
+  final AssistantAction action;
+}
 
 /// The floating "ClassVault" bubble's brain — available from every
 /// screen, unlike [ChatService] which only ever answers about one
@@ -37,9 +52,11 @@ class GlobalAssistantService {
         .watch(fireImmediately: true);
   }
 
-  Future<String> sendMessage(String question) async {
+  Future<AssistantReply> sendMessage(String question) async {
     final trimmed = question.trim();
-    if (trimmed.isEmpty) return '';
+    if (trimmed.isEmpty) {
+      return const AssistantReply(text: '', action: AssistantAction.none);
+    }
 
     await _addMessage(ChatRole.user, trimmed);
 
@@ -48,15 +65,31 @@ class GlobalAssistantService {
         ? history.sublist(history.length - _historyTurns)
         : history;
 
-    final answer = await GeminiService.instance.generateRaw(
-      _buildPrompt(recentHistory),
+    final subjectNames = await _currentSubjectNames();
+    final raw = await GeminiService.instance.generateRaw(
+      _buildPrompt(recentHistory, subjectNames),
     );
-    await _addMessage(ChatRole.assistant, answer);
-    return answer;
+
+    final reply = _parseReply(raw);
+    await _addMessage(ChatRole.assistant, reply.text);
+    return reply;
   }
 
-  String _buildPrompt(List<ChatMessage> history) {
-    final buffer = StringBuffer()..writeln(_systemPrompt);
+  /// Subjects in the currently active semester, used only to tell
+  /// Gemini what "open <subject>" could validly refer to — it never
+  /// sees anything beyond names, no uploaded material.
+  Future<List<String>> _currentSubjectNames() async {
+    final semester = await SemesterService.instance.getActive();
+    if (semester == null) return const [];
+    final subjects = await SubjectService.instance.getForSemester(semester.id);
+    return subjects.map((s) => s.name).toList();
+  }
+
+  String _buildPrompt(List<ChatMessage> history, List<String> subjectNames) {
+    final buffer = StringBuffer()
+      ..writeln(_systemPrompt)
+      ..writeln()
+      ..writeln(_actionInstructions(subjectNames));
 
     if (history.isNotEmpty) {
       buffer.writeln('\n--- Conversation so far ---');
@@ -68,6 +101,77 @@ class GlobalAssistantService {
     }
 
     return buffer.toString();
+  }
+
+  /// Describes the small, fixed set of app-control actions available
+  /// (see [AssistantActionType]) and the exact JSON shape to answer in.
+  /// Kept deliberately narrow — no destructive actions, no free-form
+  /// commands — so a bad or hallucinated response can only ever land on
+  /// something harmless like `type: "none"`.
+  String _actionInstructions(List<String> subjectNames) {
+    final subjectsLine =
+        subjectNames.isEmpty ? 'none set up yet' : subjectNames.join(', ');
+    return 'You can also control the ClassVault app itself, on top of '
+        'replying. Respond with ONLY a JSON object — no markdown code '
+        'fences, no text before or after it — in exactly this shape:\n'
+        '{"reply": "<what you say>", "action": {"type": '
+        '"<none|setTheme|navigateTab|openSubject>", "value": '
+        '"<target, or null>"}}\n\n'
+        'Rules for "action":\n'
+        '- "setTheme": use when asked to change the theme/appearance. '
+        'value is "light", "dark", or "system".\n'
+        '- "navigateTab": use when asked to go to / open / show one of '
+        'the app\'s main sections. value is one of: Home, Semester, '
+        'Subjects, AI Chat, Search, Settings.\n'
+        '- "openSubject": use when asked to open a specific subject\'s '
+        'workspace. value is the subject\'s name. Subjects that exist '
+        'right now: $subjectsLine. If the named subject isn\'t in that '
+        'list, still set the action (the app will tell the student it '
+        'wasn\'t found) rather than refusing.\n'
+        '- "none": use for anything else, including plain questions — '
+        'value is null.\n\n'
+        'Always fill "reply" with a normal, spoken-style answer '
+        'regardless of the action — e.g. if asked to switch to dark '
+        'mode, reply something like "Switched to dark mode" AND set '
+        'the setTheme action. Never mention the JSON format itself to '
+        'the student.';
+  }
+
+  /// Parses Gemini's JSON reply into text + action. Falls back to
+  /// treating the whole response as plain text (action: none) if it
+  /// isn't valid JSON or isn't the expected shape — a malformed
+  /// response should still reach the student, not get swallowed.
+  AssistantReply _parseReply(String raw) {
+    try {
+      var cleaned = raw.trim();
+      if (cleaned.startsWith('```')) {
+        cleaned = cleaned
+            .replaceFirst(RegExp(r'^```(json)?', caseSensitive: false), '')
+            .replaceFirst(RegExp(r'```$'), '')
+            .trim();
+      }
+
+      final decoded = jsonDecode(cleaned) as Map<String, dynamic>;
+      final text = (decoded['reply'] as String?)?.trim();
+      if (text == null || text.isEmpty) {
+        return AssistantReply(text: raw.trim(), action: AssistantAction.none);
+      }
+
+      final actionMap = decoded['action'] as Map<String, dynamic>?;
+      final typeName = actionMap?['type'] as String?;
+      final value = actionMap?['value'] as String?;
+      final type = AssistantActionType.values.firstWhere(
+        (t) => t.name.toLowerCase() == typeName?.toLowerCase(),
+        orElse: () => AssistantActionType.none,
+      );
+
+      return AssistantReply(
+        text: text,
+        action: AssistantAction(type: type, value: value),
+      );
+    } catch (_) {
+      return AssistantReply(text: raw.trim(), action: AssistantAction.none);
+    }
   }
 
   static const _systemPrompt =

@@ -1,6 +1,7 @@
 import '../models/enums.dart';
 import '../models/subject.dart';
 import 'lecture_service.dart';
+import 'note_service.dart';
 import 'resource_service.dart';
 import 'syllabus_service.dart';
 
@@ -26,9 +27,9 @@ class ChatContextService {
 
   /// Builds the grounding text for [subject]. Returns an empty string
   /// (never null) if the subject has no OCR'd lectures, extracted
-  /// resources, or syllabus yet — [ChatService] treats that as "answer
-  /// from general knowledge, but say there's nothing subject-specific
-  /// yet" rather than as an error.
+  /// resources, syllabus, or notes yet — [ChatService] treats that as
+  /// "answer from general knowledge, but say there's nothing
+  /// subject-specific yet" rather than as an error.
   Future<String> buildContext(Subject subject) async {
     final sections = <String>[];
 
@@ -36,6 +37,20 @@ class ChatContextService {
     final syllabusText = syllabus?.extractedText?.trim();
     if (syllabusText != null && syllabusText.isNotEmpty) {
       sections.add('=== Syllabus ===\n$syllabusText');
+    }
+
+    // Quick Notes — the person's own free-form notes about the
+    // subject. These were previously left out entirely, so the chat
+    // couldn't answer anything about them even though the Notes tab
+    // had content.
+    final notes = await NoteService.instance.getForSubject(subject.id);
+    notes.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    for (final note in notes) {
+      final body = note.body.trim();
+      if (body.isEmpty) continue;
+      final title = note.title?.trim();
+      final heading = (title == null || title.isEmpty) ? 'Note' : 'Note: $title';
+      sections.add('=== $heading ===\n$body');
     }
 
     final resources =

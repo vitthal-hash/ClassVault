@@ -5,12 +5,12 @@ import 'package:provider/provider.dart';
 
 import '../core/services/search_service.dart';
 import '../core/theme/app_tokens.dart';
-import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
 import '../utils/constants.dart';
 import '../widgets/note_editor_sheet.dart';
 import '../widgets/placeholder_view.dart';
 import 'lecture_detail_screen.dart';
+import 'semester_screen.dart';
 import 'subject_workspace_screen.dart';
 import '../core/models/enums.dart';
 
@@ -151,7 +151,9 @@ class _SearchScreenState extends State<SearchScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const SemesterScreen()),
+                  ),
                   child: const Text('Go to Semester'),
                 ),
               ),

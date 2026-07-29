@@ -4,10 +4,10 @@ import 'package:provider/provider.dart';
 import '../core/models/subject.dart';
 import '../core/services/subject_service.dart';
 import '../core/theme/app_tokens.dart';
-import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
 import '../widgets/placeholder_view.dart';
 import '../widgets/quick_capture_flow.dart';
+import 'semester_screen.dart';
 import 'subject_workspace_screen.dart';
 import 'timetable_upload_screen.dart';
 
@@ -38,7 +38,9 @@ class SubjectsScreen extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const SemesterScreen()),
+                  ),
                   child: const Text('Go to Semester'),
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../core/models/chat_message.dart';
 import '../core/models/enums.dart';
+import '../core/services/assistant_action_dispatcher.dart';
 import '../core/services/gemini_service.dart';
 import '../core/services/global_assistant_service.dart';
 import '../core/theme/app_tokens.dart';
@@ -118,10 +119,23 @@ class _ClassVaultBotScreenState extends State<ClassVaultBotScreen> {
     });
 
     try {
-      final answer = await GlobalAssistantService.instance.sendMessage(text);
+      final reply = await GlobalAssistantService.instance.sendMessage(text);
       _scrollToBottom();
+
+      // Act on whatever ClassVault decided to do (change theme,
+      // navigate, open a subject) before speaking, so e.g. "Couldn't
+      // find that subject" below still reaches the person even though
+      // the spoken reply already played.
+      final followUp = await AssistantActionDispatcher.run(reply.action);
+
       await _tts.stop();
-      await _tts.speak(answer);
+      await _tts.speak(reply.text);
+
+      if (followUp != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(followUp)),
+        );
+      }
     } on GeminiApiKeyMissingException {
       if (mounted) {
         setState(() {

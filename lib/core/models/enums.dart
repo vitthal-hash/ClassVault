@@ -264,6 +264,15 @@ extension OcrScriptX on OcrScript {
 /// person or Gemini's reply.
 enum ChatRole { user, assistant }
 
+/// The fixed, deliberately small allow-list of things the global
+/// assistant (the floating bubble) can actually *do* in the app, on
+/// top of just replying — e.g. "switch to dark mode" or "open DBMS".
+/// Gemini names one of these in its structured reply;
+/// `AssistantActionDispatcher` is the only place that turns it into a
+/// real app change. Nothing outside this list (no free-form code, no
+/// destructive actions like deleting a subject) is ever exposed to it.
+enum AssistantActionType { none, setTheme, navigateTab, openSubject }
+
 /// Phase 14 (Assignment Manager): whether an uploaded assignment has
 /// been turned in yet. "Overdue" isn't stored — it's derived on
 /// [Assignment.isOverdue] from status + deadline, so it's never stale.

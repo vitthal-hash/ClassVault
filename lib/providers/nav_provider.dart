@@ -1,7 +1,8 @@
 import 'package:flutter/foundation.dart';
 
-/// Tracks which top-level tab (Home / Semester / Subjects / AI Chat /
-/// Search / Settings) is currently active.
+/// Tracks which top-level tab (Home / Subjects / AI Chat / Search) is
+/// currently active. Semester and Settings live behind RootShell's
+/// "More" sheet instead of being tabs — see `root_shell.dart`.
 class NavProvider extends ChangeNotifier {
   int _index = 0;
   int get index => _index;

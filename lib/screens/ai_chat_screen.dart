@@ -7,6 +7,7 @@ import '../core/theme/app_tokens.dart';
 import '../providers/nav_provider.dart';
 import '../providers/semester_provider.dart';
 import '../widgets/placeholder_view.dart';
+import 'semester_screen.dart';
 import 'subject_chat_screen.dart';
 
 /// Top-level "AI Chat" nav destination. Per the plan, chat is always
@@ -41,7 +42,9 @@ class AiChatScreen extends StatelessWidget {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const SemesterScreen()),
+                  ),
                   child: const Text('Go to Semester'),
                 ),
               ),
@@ -79,7 +82,7 @@ class AiChatScreen extends StatelessWidget {
                     width: double.infinity,
                     child: FilledButton(
                       onPressed: () =>
-                          context.read<NavProvider>().setIndex(2),
+                          context.read<NavProvider>().setIndex(1),
                       child: const Text('Go to Subjects'),
                     ),
                   ),

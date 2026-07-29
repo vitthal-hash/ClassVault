@@ -13,6 +13,7 @@ import '../widgets/common/section_header.dart';
 import '../widgets/placeholder_view.dart';
 import 'lecture_detail_screen.dart';
 import 'revision_screen.dart';
+import 'semester_screen.dart';
 import 'subject_workspace_screen.dart';
 import 'timetable_upload_screen.dart';
 
@@ -92,7 +93,9 @@ class _HomeScreenState extends State<HomeScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => context.read<NavProvider>().setIndex(1),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(builder: (_) => const SemesterScreen()),
+                  ),
                   child: const Text('Go to Semester'),
                 ),
               ),
@@ -224,7 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           label: 'Search',
                           subtitle: 'By content',
                           onTap: () =>
-                              context.read<NavProvider>().setIndex(4),
+                              context.read<NavProvider>().setIndex(3),
                         ),
                       ),
                       const SizedBox(width: AppSpacing.sm),
